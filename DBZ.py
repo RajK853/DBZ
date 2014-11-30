@@ -6,6 +6,7 @@ pygame.init()
 WINW = 800
 WINH = 500
 windowSurface = pygame.display.set_mode((WINW, WINH))
+transparentSurface = windowSurface.convert_alpha()
 pygame.display.set_caption("Dragon Ball")
 mainClock = pygame.time.Clock()
 FPS = 50
@@ -19,6 +20,7 @@ TEAL = (0, 128, 128)
 YELLOW = (255, 255, 0)
 
 # set up game constants
+SCORETHRESHOLD = 3000       # energy damage will be increased by 1 in every 3000 scores earned
 STARMINSIZE = 2
 STARMAXSIZE = 8
 STARSPEED = 2
@@ -38,6 +40,7 @@ ENERGYSPEED = 5
 ENERGYW = 55
 ENERGYH = 25
 ENERGYDMG = 10
+MAXENERGYDMG = 20
 energy = []     # stores the rectangle information and the image data of each energy as a dictionary in this list
 OBJMINSIZE = 25
 OBJMAXSIZE = 50
@@ -97,8 +100,11 @@ def moveObjects():      # Moves the objects (asteroids, comets and planets) to l
 			if e["rect"].colliderect(o["rect"]):          # check if the current object collides with any energy blast on the screen
 				o["life"][0] -= e["damage"]                 # if it collides, reduce the life of the object according to the damage of the enegy
 				energy.remove(e)                                # remove the energy blast that collided
+				prevScore = score
 				if o["life"][0] <= 0:                              # if the life of the object is zero or less
 					score += o["life"][1]                       # increase the score by the value of life of the object
+					if (prevScore%SCORETHRESHOLD) > (score%SCORETHRESHOLD) and ENERGYDMG <= MAXENERGYDMG:
+						ENERGYDMG += 1
 					objects.remove(o)                           # then remove the object which was destroyed by the energy blast
 
 def kamehameha(playerImg):                              # shoots Kamehameha
@@ -132,9 +138,12 @@ def kamehameha(playerImg):                              # shoots Kamehameha
 		for o in objects[:]:
 			windowSurface.blit(o["image"], o["rect"])                       # draw objects again on the screen so that they appear over kamehameha
 			if KAMEHAMEHA["rect"].colliderect(o["rect"]):               # check if the current object collided with kamehameha
-				o["life"][0] -= KAMEHAMEHA["damage"]                    # subtract life is yeas
+				o["life"][0] -= KAMEHAMEHA["damage"]                    # subtract life is yes
+				prevScore = score
 				if o["life"][0] <= 0:                                                       # check if objects life is zero or less
 					score += o["life"][1]                                                   # provide socre is yes
+					if (prevScore%SCORETHRESHOLD) > (score%SCORETHRESHOLD) and ENERGYDMG <= MAXENERGYDMG:
+						ENERGYDMG += 1
 					objects.remove(o)                                                       # then remove the object
 		pygame.display.update()                                                     # update the changes made in the above While loop
 		mainClock.tick(FPS)
@@ -177,8 +186,11 @@ def explosiveWave(playerImg):
 			windowSurface.blit(o["image"], o["rect"])                       # draw objects again on the screen so that they appear over explosive wave
 			if EXPLOSIVEWAVE["rect"].colliderect(o["rect"]):               # check if the current object collided with explosive wave
 				o["life"][0] -= EXPLOSIVEWAVE["damage"]                    # subtract life is yeas
+				prevScore = score
 				if o["life"][0] <= 0:                                                       # check if objects life is zero or less
 					score += o["life"][1]                                                   # provide socre is yes
+					if (prevScore%SCORETHRESHOLD) > (score%SCORETHRESHOLD) and ENERGYDMG <= MAXENERGYDMG:
+						ENERGYDMG += 1
 					objects.remove(o)                                                       # then remove the object
 		pygame.display.update()                                                     # update the changes made in the above While loop
 		mainClock.tick(FPS)
@@ -239,6 +251,13 @@ def blink(dir, superSayan):             # makes the player blink up or down
 	pygame.mouse.set_pos(finalRect.centerx, finalRect.centery)          # move mouse to final position
 	windowSurface.blit(blinkImg, playerRect)                               # make the blink image in initial position
 	windowSurface.blit(blinkImg, finalRect)                                   # make the blink image in final position
+	if charging[0]:
+		transparentSurface.fill((0, 0, 0, 0))                                       #  fill transparentSurface with an invisible colour
+		if superSayan:
+			pygame.draw.circle(transparentSurface, (chargeTime*50, chargeTime*50, 0, chargeTime*40), CENTER, radius)    # draw a yellow transparent circle
+		else:
+			pygame.draw.circle(transparentSurface, (chargeTime*50, 0, 0, chargeTime*40), CENTER, radius)           # draw a red transparent circle
+		windowSurface.blit(transparentSurface, pygame.Rect(0, 0, WINW, WINH))                         # draw the transparent over the windowSurface
 	pygame.display.update()                                                             # update the change
 	pygame.time.wait(150)                                                               # make the screen freeeze while blinking
 	playerRect = finalRect                                                              # set final rect as player's rect
@@ -326,7 +345,7 @@ def drawEnergyBar(manualDrain):                     # draw's energy bar with cur
 	barImg = pygame.transform.scale(pygame.image.load("Data/Image/Energy_bar.png"), (ENERGYW+50, ENERGYH))
 	pygame.draw.rect(windowSurface, YELLOW, (12, WINH - 48, energyBar, ENERGYH-2))
 	windowSurface.blit(barImg, pygame.Rect(10, WINH - 50, ENERGYW, ENERGYH))
-	if charging:                    # if kamehameha is charging
+	if charging[0]:                    # if kamehameha is charging
 		energyBar -= manualDrain        # decrease the energyBar with value given for manualDrain
 		if energyBar < 0:
 			energyBar = 0
@@ -360,6 +379,14 @@ def pause(text, drawRect, x, y):                # pause the game
 				return
 		pygame.display.update()
 
+def stopAllSounds():
+	SOUND.goSS.stop()
+	SOUND.releasing.stop()
+	SOUND.charging.stop()
+	SOUND.blink.stop()
+	SOUND.charging_e.stop()
+	SOUND.shoot.stop()
+
 # Start of the game
 while True:
 	pygame.mouse.set_visible(False)
@@ -369,7 +396,8 @@ while True:
 	objects = []                        # make initial object empty
 	topScore = topScoreFile("load")             # load top score from the 'topScore.txt' file
 	energyBar = MAXENERGY                       # set the energy bar to full
-	superSayan = charging = mouseDown = False       # set supersayan, charging and mouse chicked status to false
+	superSayan = mouseDown = False       # set supersayan and mouse chicked status to false
+	charging = [False, "n"]                     # set charging to false
 	# startingTexts holds texts to be displayed turn by turn on the screen
 	startingTexts = ["Dragon Ball", "Move mouse cursor to move character and hold left click to attack.", "Destroy the objects and score more.", "Press 'W' and 'S' to blink up and down respectively.", "Press 'A' to go to SuperSayan Mode (2xDamage).", "Hold 'Space', then release it to use Kamehameha.", "Hold 'D', then release it to use Explosive wave.", "Press 'P' to pause and 'Esc' to close the game."]
 	wallpaper = pygame.transform.scale(pygame.image.load("Data/Image/Welcome.jpg"), (WINW, WINH))
@@ -394,7 +422,7 @@ while True:
 	c1 = c2 = 2*FPS   # use to measure the charge time value
 	while True:
 		time += 1                   # increase time by 1 per frame
-		if energyBar == 0 and not charging:          # if energy bar empty
+		if energyBar == 0 and not charging[0]:          # if energy bar empty
 			superSayan = False          # turn off SS mode
 			playerImg = playerImage("None", superSayan)
 		if not superSayan:
@@ -415,7 +443,7 @@ while True:
 		for event in pygame.event.get():
 			if event.type == QUIT:
 				terminate()
-			if not charging:
+			if not charging[0]:
 				if event.type == MOUSEBUTTONDOWN:
 					# allowing shooting only if not charging
 					mouseDown = True
@@ -441,33 +469,35 @@ while True:
 					playerImg = playerImage("None", superSayan)
 				elif event.key == K_SPACE:
 					if energyBar >= 50:             # if energy is atleast 50
-						charging = True             # charging
+						charging = [True, "k"]             # charging
+						stopAllSounds()
 						SOUND.charging.play()
 						drawEnergyBar(50)       # reduce the enegy bar by 50
 				elif event.key == ord("d"):
 					if energyBar >= MAXENERGY:             # if energy is full
-						charging = True             # charging
+						charging = [True, "e"]             # charging
+						stopAllSounds()
 						SOUND.charging_e.play()
 						drawEnergyBar(MAXENERGY)       # use all the energy
 				elif event.key == K_ESCAPE:
 					terminate()
 			if event.type == KEYUP:
-				if charging:                # if charging
-					if event.key == K_SPACE:
+				if charging[0]:                # if charging
+					if event.key == K_SPACE and charging[1] == "k":
 						SOUND.charging.stop()       # stop the charging sound
 						playerImg = playerImage("Release", superSayan)
 						SOUND.releasing.play()      # play the kamehameha releasing sound
 						kamehameha(playerImg)       # draw kamehameha image animation
-						charging = False                # stop charging
+						charging = [False, "n"]                # stop charging
 						playerImg = playerImage("None", superSayan)
 						c1 = 2*FPS
 						chargeTime = 1
-					elif event.key == ord("d"):
+					elif event.key == ord("d") and charging[1] == "e":
 						SOUND.charging_e.stop()       # stop the charging sound
 						playerImg = playerImage("Release Wave", superSayan)
 						SOUND.releasing.play()      # play the explosive wave releasing sound
 						explosiveWave(playerImg)       # draw explosive image animation
-						charging = False                # stop charging
+						charging = [False, "n"]                # stop charging
 						playerImg = playerImage("None", superSayan)
 						c1 = 2*FPS
 						chargeTime = 1
@@ -476,28 +506,36 @@ while True:
 		if mouseDown:               # if mouse button pressed
 			addNewEnergy(superSayan)            # add new energy in the screen
 			playerImg = playerImage("Shoot", superSayan)
-		elif not mouseDown and not charging:                    # if mouse not pressed and not charging
+		elif not mouseDown and not charging[0]:                    # if mouse not pressed and not charging
 			t1 = 8                                                              # reset t1's value to 8
 			playerImg = playerImage("None", superSayan)
-		if charging:                                                            # if charging
+		if charging[0]:                                                            # if charging
 			c1 += 1
 			if c1%c2 == 0 and chargeTime != 4:
 				chargeTime += 1
 			mouseDown = False                                           # prevent shooting energy
 			playerImg = playerImage("Charge", superSayan)
+			# add a circular energy field while charging
+			CENTER = (playerRect.centerx-10, playerRect.centery+15)     # set the circular energy field's circle
+			radius = (5-chargeTime)*10                                                  # set the radius of the fiels which decreses with chargetime
+			transparentSurface.fill((0, 0, 0, 0))                                       #  fill transparentSurface with an invisible colour
+			if superSayan:
+				pygame.draw.circle(transparentSurface, (chargeTime*50, chargeTime*50, 0, chargeTime*40), CENTER, radius)    # draw a yellow transparent circle
+			else:
+				pygame.draw.circle(transparentSurface, (chargeTime*50, 0, 0, chargeTime*40), CENTER, radius)           # draw a red transparent circle
+			windowSurface.blit(transparentSurface, pygame.Rect(0, 0, WINW, WINH))                         # draw the transparent over the windowSurface
 		pygame.mouse.set_pos(playerRect.centerx, playerRect.centery)    # move mouse to player's center
 		pygame.display.update()
 		mainClock.tick(FPS)
 	# Stop all currently playing sounds
-	SOUND.charging.stop()
-	SOUND.releasing.stop()
-	SOUND.goSS.stop()
+	stopAllSounds()
 	pygame.mixer.music.stop()
 	writeText("Game Over!", WHITE, 30, (WINW/2)-85, (WINH/2)-30, False)
 	pygame.display.update()
 	pygame.time.wait(900)
 	if score == topScore:
 		text, rect = writeText("New Top Score: %s" % str(score), YELLOW, 30, 0, 0, True)
+		topScoreFile("save")
 	else:
 		text, rect = writeText("Your Score: %s" % str(score), WHITE, 30, 0, 0, True)
 	rect.centerx = windowSurface.get_rect().centerx
@@ -505,6 +543,5 @@ while True:
 	pygame.draw.rect(windowSurface, BGCOLOR, rect)
 	windowSurface.blit(text, rect)
 	pygame.display.update()
-	pygame.time.wait(3000)
+	pygame.time.wait(1800)
 	pause("Press any key to play again.", True, -1, -1)
-	topScoreFile("save")
