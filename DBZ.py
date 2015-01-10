@@ -95,7 +95,7 @@ def moveObjects():      # Moves the objects (asteroids, comets and planets) to l
 	global score
 	for o in objects[:]:
 		o["rect"].move_ip(-o["speed"], 0)               # move object to left
-		windowSurface.blit(o["image"], o["rect"])       # draw it on the screen
+		windowSurface.blit(o["image"], o["rect"])
 		for e in energy[:]:                                     # loop over every energy blasts on the screen
 			if e["rect"].colliderect(o["rect"]):          # check if the current object collides with any energy blast on the screen
 				o["life"][0] -= e["damage"]                 # if it collides, reduce the life of the object according to the damage of the enegy
