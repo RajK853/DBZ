@@ -79,7 +79,7 @@ def makeNewObjects(time):       # adds new object on the screen according to the
 		objects.append({"rect" : pygame.Rect(WINW, random.randint(0, WINH-objectSize), objectSize, objectSize), "speed" : random.randint(OBJMINSPEED, OBJMAXSPEED), "life" : [objectSize, objectSize], "image" : objectImg})
 	if time%100 == 0:                       # makes new comets on the screen in every 100 frames
 		n = int((time/100)/5)
-		if n > 5:
+		if n > 5:               # limit max number of comets made once to 5
 			n = 5
 		for i in range(n):              # Adds more comets simultaneously on the screen with time
 			objectSize = random.randint(OBJMINSIZE, OBJMAXSIZE)
@@ -87,9 +87,9 @@ def makeNewObjects(time):       # adds new object on the screen according to the
 			objects.append({"rect" : pygame.Rect(WINW, random.randint(0, WINH-objectSize), objectSize, objectSize), "speed" : random.randint(OBJMINSPEED, OBJMAXSPEED), "life" : [objectSize, objectSize], "image" : objectImg})
 	if time%1000 == 0:              # makes planets on the screen in every 1000 frames
 		if (time/1000) <= 3:         # the first three planets have relatively smaller radius and less life i.e easier to destroy
-			objects.append({"rect" : pygame.Rect(WINW, 0, PLANETRADIUS, PLANETRADIUS), "speed" : PLANETSPEED, "life" : [PLANETLIFE+int(time/1000)*25, PLANETLIFE+int(time/1000)*25], "image" : pygame.transform.scale(pygame.transform.rotate(pygame.image.load("Data/Image/Planet.png"), 20), ((5*int(time/1000))+PLANETRADIUS, (5*int(time/1000))+PLANETRADIUS))})
+			objects.append({"rect" : pygame.Rect(WINW, 0, PLANETRADIUS+(5*int(time/1000)), PLANETRADIUS+(5*int(time/1000))), "speed" : PLANETSPEED, "life" : [PLANETLIFE+int(time/1000)*25, PLANETLIFE+int(time/1000)*25], "image" : pygame.transform.scale(pygame.transform.rotate(pygame.image.load("Data/Image/Planet.png"), 20), ((5*int(time/1000))+PLANETRADIUS, (5*int(time/1000))+PLANETRADIUS))})
 		else:                               # After the third planet, planets have large radius and more life i.e harder to destroy
-			objects.append({"rect" : pygame.Rect(WINW, 0, PLANETRADIUS, PLANETRADIUS), "speed" : PLANETSPEED, "life" : [2*PLANETLIFE+int(time/1000)*10, 2*PLANETLIFE+int(time/1000)*10], "image" : pygame.transform.scale(pygame.transform.rotate(pygame.image.load("Data/Image/Planet.png"), 20), (PLANETRADIUS+(5*int(time/1000)), PLANETRADIUS+(5*int(time/1000))))})
+			objects.append({"rect" : pygame.Rect(WINW, 0, PLANETRADIUS+(5*int(time/1000)), PLANETRADIUS+(5*int(time/1000))), "speed" : PLANETSPEED, "life" : [2*PLANETLIFE+int(time/1000)*10, 2*PLANETLIFE+int(time/1000)*10], "image" : pygame.transform.scale(pygame.transform.rotate(pygame.image.load("Data/Image/Planet.png"), 20), (PLANETRADIUS+(5*int(time/1000)), PLANETRADIUS+(5*int(time/1000))))})
 
 def moveObjects():      # Moves the objects (asteroids, comets and planets) to left
 	global score
@@ -104,7 +104,7 @@ def moveObjects():      # Moves the objects (asteroids, comets and planets) to l
 				if o["life"][0] <= 0:                              # if the life of the object is zero or less
 					score += o["life"][1]                       # increase the score by the value of life of the object
 					if (prevScore%SCORETHRESHOLD) > (score%SCORETHRESHOLD) and ENERGYDMG <= MAXENERGYDMG:
-						ENERGYDMG += 1
+						ENERGYDMG += 1          # increase the damage of energy as you destroy more objects but upto the MAXENERGYDMG
 					objects.remove(o)                           # then remove the object which was destroyed by the energy blast
 
 def kamehameha(playerImg):                              # shoots Kamehameha
@@ -126,12 +126,11 @@ def kamehameha(playerImg):                              # shoots Kamehameha
 		moveObjects()                                   # keep moving the objects
 		moveEnergy()                                    # keep moving the energy blasts on the screen
 		displayScore()                                  # keep displaying the score
-		superSayan = False
 		drawEnergyBar(0)                            # draw no energy while Kamehameha is progressing to the right side
-		KAMEHAMEHA["rect"].width += ENERGYSPEED+5           # increase Kamehameha's lenght (width) a little bit faster than that of ordinary energy's speed
+		KAMEHAMEHA["rect"].width += ENERGYSPEED+5           # increase Kamehameha's length a little bit faster than that of ordinary energy's speed
 		windowSurface.blit(playerImg, playerRect)                       # draw player's image on the screen
 		windowSurface.blit(kamehamehaImg, KAMEHAMEHA["rect"])       # draw kamehameha in its current position on the screen
-		if gotHit():                        # check if got hit
+		if gotHit():                        # check if player got hit
 			if score > topScore:            # if score is higher than top score
 				topScore = score            # make the score top score
 			break                           # break the while loop and go to end of the code
@@ -141,16 +140,14 @@ def kamehameha(playerImg):                              # shoots Kamehameha
 				o["life"][0] -= KAMEHAMEHA["damage"]                    # subtract life is yes
 				prevScore = score
 				if o["life"][0] <= 0:                                                       # check if objects life is zero or less
-					score += o["life"][1]                                                   # provide socre is yes
+					score += o["life"][1]                                   # increase score
 					if (prevScore%SCORETHRESHOLD) > (score%SCORETHRESHOLD) and ENERGYDMG <= MAXENERGYDMG:
-						ENERGYDMG += 1
+						ENERGYDMG += 1          # increase energy damage if less than max energy damage
 					objects.remove(o)                                                       # then remove the object
 		pygame.display.update()                                                     # update the changes made in the above While loop
 		mainClock.tick(FPS)
 	if KAMEHAMEHA["rect"].right >= WINW+200:                         # stop the releasing sound after kamehameha is over
 		SOUND.releasing.stop()
-	if KAMEHAMEHA["damage"] == 2*(KAMEHAMEHADMG+chargeTime):         # check if super sayan mode was on or not
-		superSayan = True                                                               # set value to True if yes
 	KAMEHAMEHA["damage"] = KAMEHAMEHADMG                    # reset the kamehameha's damage value to default value
 
 def explosiveWave(playerImg):
@@ -169,7 +166,6 @@ def explosiveWave(playerImg):
 		time += 1
 		moveObjects()                                   # keep moving the objects
 		moveEnergy()                                    # keep moving the energy blasts on the screen
-		superSayan = False
 		EXPLOSIVEWAVE["rect"].width += 6*ENERGYSPEED           # increase explosive wave's  width a little bit faster than that of ordinary energy's speed
 		EXPLOSIVEWAVE["rect"].height += 6*ENERGYSPEED
 		EXPLOSIVEWAVE["rect"].centerx = playerRect.centerx                 # set explosive wave's centerx to player's centerx
@@ -196,8 +192,6 @@ def explosiveWave(playerImg):
 		mainClock.tick(FPS)
 	if EXPLOSIVEWAVE["rect"].right >= WINW+200:                         # stop the releasing sound after explosive wave is over
 		SOUND.releasing.stop()
-	if EXPLOSIVEWAVE["damage"] == 2*(EXPLOSIVEWAVEDMG+chargeTime):         # check if super sayan mode was on or not
-		superSayan = True                                                               # set value to True if yes
 	EXPLOSIVEWAVE["damage"] = EXPLOSIVEWAVEDMG                    # reset the explosive wave's damage value to default value
 
 def addNewEnergy(superSayan):       # Adds new energy dictionary to the list energy
