@@ -108,7 +108,7 @@ def moveObjects():      # Moves the objects (asteroids, comets and planets) to l
 					objects.remove(o)                           # then remove the object which was destroyed by the energy blast
 
 def kamehameha(playerImg):                              # shoots Kamehameha
-	global score, superSayan, time, chargeTime, topScore
+	global score, superSayan, time, chargeTime, topScore, ENERGYDMG
 	KAMEHAMEHA["rect"].width = 0                    # set initial width of kamehameha to zero so that it isn't visible on the screen
 	KAMEHAMEHA["rect"].height = PLAYERIMGH+40           # set its height a little bit greater than player's height
 	KAMEHAMEHA["rect"].left = playerRect.right                 # set the kamehameha's left side equal to the player's right side so that it sees to come out from the hand
@@ -154,7 +154,7 @@ def kamehameha(playerImg):                              # shoots Kamehameha
 	KAMEHAMEHA["damage"] = KAMEHAMEHADMG                    # reset the kamehameha's damage value to default value
 
 def explosiveWave(playerImg):
-	global score, superSayan, time, chargeTime, topScore
+	global score, superSayan, time, chargeTime, topScore, ENERGYDMG
 	EXPLOSIVEWAVE["rect"].width = 0                    # set initial width of explosive wave to zero so that it isn't visible on the screen
 	EXPLOSIVEWAVE["rect"].height = 0                   # set initial heigth of explosive wave to zero so that it isn't visible on the screen
 	if superSayan:                              # if Super Sayan mode is on
