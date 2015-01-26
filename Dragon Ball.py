@@ -18,13 +18,10 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 TEAL = (0, 128, 128)
 YELLOW = (255, 255, 0)
+RED = (255, 10, 10)
 
 # set up game constants
 SCORETHRESHOLD = 3000       # energy damage will be increased by 1 in every 3000 scores earned
-STARMINSIZE = 2
-STARMAXSIZE = 8
-STARSPEED = 2
-stars = []
 PLAYERIMGW = 35
 PLAYERIMGH = 80
 BLINKDISTANCE = PLAYERIMGH+40
@@ -32,7 +29,7 @@ KAMEHAMEHADMG = 3
 EXPLOSIVEWAVEDMG = 1
 KAMEHAMEHA = {"rect" : pygame.Rect(0, 0, 0, 0), "damage" : KAMEHAMEHADMG}
 EXPLOSIVEWAVE = {"rect" : pygame.Rect(0, 0, 0, 0), "damage" : EXPLOSIVEWAVEDMG}
-MAXENERGY = 100
+MAXBARVALUE = 100
 ENERGYBARW = 100
 ENERGYBARH = 50
 ENERGYPERSECOND = 0.5
@@ -60,16 +57,21 @@ class SOUND:    # Holds all the sound files' locations and names
 	shoot = pygame.mixer.Sound("Data/Sound/Shoot.ogg")                  # Sound for normal energy shooting
 	charging_e = pygame.mixer.Sound("Data/Sound/Charging_e.ogg")        # Sound when charging explosive wave
 
-def makeAnimatedBackground():               # Makes a background with stars going to left
-	windowSurface.fill(BGCOLOR)
-	starSize = random.randint(STARMINSIZE, STARMAXSIZE)         # randomly selects a size for a star
-	starImg = pygame.transform.scale(pygame.image.load("Data/Image/star.png"), (starSize, starSize))        # make the star image of the randomly chosen size
-	stars.append({"rect": pygame.Rect(WINW, random.randint(0, WINH), 0, 0), "image" : starImg})             # append the star's rect info and image in the 'stars' list
-	for s in stars[:]:
-		windowSurface.blit(s["image"], s["rect"])           # loops over every star info in the 'stars' list and draw them on the screen according to the rect and image value they hold
-		s["rect"].move_ip(-STARSPEED, 0)                       # move the current star to left according to the value of STARSPEED
-		if s["rect"].right < 0:                                             # check if the star's right edge has gone past the left edge of the screen
-			stars.remove(s)                                                 # remove the star if it has
+class Background:
+	STARMINSIZE = 2
+	STARMAXSIZE = 8
+	STARSPEED = 2
+	stars = []
+	def animate(self):               # Makes a background with stars going to left
+		windowSurface.fill(BGCOLOR)
+		starSize = random.randint(self.STARMINSIZE, self.STARMAXSIZE)         # randomly selects a size for a star
+		starImg = pygame.transform.scale(pygame.image.load("Data/Image/star.png"), (starSize, starSize))        # make the star image of the randomly chosen size
+		self.stars.append({"rect": pygame.Rect(WINW, random.randint(0, WINH), 0, 0), "image" : starImg})             # append the star's rect info and image in the 'stars' list
+		for s in self.stars[:]:
+			windowSurface.blit(s["image"], s["rect"])           # loops over every star info in the 'stars' list and draw them on the screen according to the rect and image value they hold
+			s["rect"].move_ip(-self.STARSPEED, 0)                       # move the current star to left according to the value of STARSPEED
+			if s["rect"].right < 0:                                             # check if the star's right edge has gone past the left edge of the screen
+				self.stars.remove(s)                                                 # remove the star if it has
 
 def makeNewObjects(time):       # adds new object on the screen according to the time.
 	if time%25 == 0:                        # makes new asteoids on the screen in every 25 frames
@@ -108,7 +110,7 @@ def moveObjects():      # Moves the objects (asteroids, comets and planets) to l
 					objects.remove(o)                           # then remove the object which was destroyed by the energy blast
 
 def kamehameha(playerImg):                              # shoots Kamehameha
-	global score, superSayan, time, chargeTime, topScore, ENERGYDMG
+	global score, superSayan, time, chargeTime, topScore, ENERGYDMG, health
 	KAMEHAMEHA["rect"].width = 0                    # set initial width of kamehameha to zero so that it isn't visible on the screen
 	KAMEHAMEHA["rect"].height = PLAYERIMGH+40           # set its height a little bit greater than player's height
 	KAMEHAMEHA["rect"].left = playerRect.right                 # set the kamehameha's left side equal to the player's right side so that it sees to come out from the hand
@@ -119,18 +121,19 @@ def kamehameha(playerImg):                              # shoots Kamehameha
 		KAMEHAMEHA["damage"] = KAMEHAMEHA["damage"]+chargeTime                  # Increase kamehameha's damage according to the time it was being charged
 	while KAMEHAMEHA["rect"].right < WINW+200:                             # while Kamehameha's right side is within the 200 pixel additional distance from the window's width
 		kamehamehaImg = pygame.transform.scale(pygame.image.load("Data/Image/kamehameha.png"), (KAMEHAMEHA["rect"].width, KAMEHAMEHA["rect"].height))   # set kamehameha's image to current KAMEHAMEHA["rect'}'s width and height
-		makeAnimatedBackground()                # keep animating the background
+		Background().animate()                # keep animating the background
 		if time%25 == 0:                # add objects on the screen when time is a multiple of 25
 			makeNewObjects(time)
 		time += 1
 		moveObjects()                                   # keep moving the objects
 		moveEnergy()                                    # keep moving the energy blasts on the screen
 		displayScore()                                  # keep displaying the score
+		drawHealthBar(health)                      # draw health bar
 		drawEnergyBar(0)                            # draw no energy while Kamehameha is progressing to the right side
 		KAMEHAMEHA["rect"].width += ENERGYSPEED+5           # increase Kamehameha's length a little bit faster than that of ordinary energy's speed
 		windowSurface.blit(playerImg, playerRect)                       # draw player's image on the screen
 		windowSurface.blit(kamehamehaImg, KAMEHAMEHA["rect"])       # draw kamehameha in its current position on the screen
-		if gotHit():                        # check if player got hit
+		if isDead():                        # check if player got hit
 			if score > topScore:            # if score is higher than top score
 				topScore = score            # make the score top score
 			break                           # break the while loop and go to end of the code
@@ -160,7 +163,7 @@ def explosiveWave(playerImg):
 		EXPLOSIVEWAVE["damage"] = EXPLOSIVEWAVE["damage"]+chargeTime                  # Increase kamehameha's damage according to the time it was being charged
 	while EXPLOSIVEWAVE["rect"].right < WINW+200:                             # while Kamehameha's right side is within the 200 pixel additional distance from the window's width
 		explosiveWaveImg = pygame.transform.scale(pygame.image.load("Data/Image/Explosive_wave.png"), (EXPLOSIVEWAVE["rect"].width, EXPLOSIVEWAVE["rect"].height))   # set kamehameha's image to current KAMEHAMEHA["rect'}'s width and height
-		makeAnimatedBackground()                # keep animating the background
+		Background().animate()                # keep animating the background
 		if time%25 == 0:                # add objects on the screen when time is a multiple of 25
 			makeNewObjects(time)
 		time += 1
@@ -168,13 +171,13 @@ def explosiveWave(playerImg):
 		moveEnergy()                                    # keep moving the energy blasts on the screen
 		EXPLOSIVEWAVE["rect"].width += 6*ENERGYSPEED           # increase explosive wave's  width a little bit faster than that of ordinary energy's speed
 		EXPLOSIVEWAVE["rect"].height += 6*ENERGYSPEED
-		EXPLOSIVEWAVE["rect"].centerx = playerRect.centerx                 # set explosive wave's centerx to player's centerx
-		EXPLOSIVEWAVE["rect"].centery = playerRect.centery        # set explosive wave's centery to player's centery
+		EXPLOSIVEWAVE["rect"].center = playerRect.center                 # set explosive wave's centers to player's center
 		windowSurface.blit(explosiveWaveImg, EXPLOSIVEWAVE["rect"])       # draw explosive wave in its current position on the screen
 		windowSurface.blit(playerImg, playerRect)                       # draw player's image on the screen
 		displayScore()                                  # keep displaying the score
+		drawHealthBar(health)
 		drawEnergyBar(0)                            # draw no energy while explosive wave is progressing to the right side
-		if gotHit():                        # check if got hit
+		if isDead():                        # check if got hit
 			if score > topScore:            # if score is higher than top score
 				topScore = score            # make the score top score
 			break                           # break the while loop and go to end of the code
@@ -221,10 +224,17 @@ def moveEnergy():           # move the energies forward
 		if e["rect"].left > WINW:
 			energy.remove(e)
 
-def gotHit():               # check if player got hit by any object
-	for o in objects:
+def isDead():               # check if player got hit by any object
+	global health, superSayan
+	for o in objects[:]:
 		if playerRect.colliderect(o["rect"]):           # if got hit
-			return True                                     # return True
+			if superSayan:
+				health -= o["life"][1]/10        # take half the damage in superSayan mode
+			else:
+				health -= o["life"][1]/5          # take full damage in normal mode
+			objects.remove(o)
+			if health <= 0:
+				return True                                     # return True
 	return False                # else return False
 
 def blink(dir, superSayan):             # makes the player blink up or down
@@ -299,10 +309,10 @@ def writeText(text, color, size, x, y, returnTextInfo):           # writes text 
 
 def topScoreFile(mode):           # save topScore in a file and load it later
 	if mode == "load":                      # to load score
-		if not os.path.isfile("Data/Image/topScore.txt"):               # if topScore.txt file not found
+		if not os.path.isfile("Data/topScore.txt"):               # if topScore.txt file not found
 			return 0                                                                        # return 0 for top score
 		else:                                                                                   # if file present
-			with open("Data/Image/topScore.txt") as file:
+			with open("Data/topScore.txt") as file:
 				data = file.read().lower()
 			score = ""
 			for i in data:
@@ -311,7 +321,7 @@ def topScoreFile(mode):           # save topScore in a file and load it later
 					windowSurface.fill(BGCOLOR)
 					writeText("Nice try messing with the top score file.", WHITE, 24, 150, 135, False)
 					writeText("But you are busted!! Top score is resetted to 0.", WHITE, 24, 100, 165, False)
-					with open("Data/Image/topScore.txt", "w") as file:
+					with open("Data/topScore.txt", "w") as file:
 						file.write("a")
 					pause("Press a key loser!", False, -1, -1)
 					return 0
@@ -320,7 +330,7 @@ def topScoreFile(mode):           # save topScore in a file and load it later
 	if mode == "save":          # to save score
 		eScore = ""         # encrypt score before storing i.e convert number to alphabet
 		for i in str(topScore): eScore += str(chr(ord("a")+int(i)))         # convert number to alphabet
-		with open("Data/Image/topScore.txt", "w") as file:
+		with open("Data/topScore.txt", "w") as file:
 			file.write(eScore)
 
 def displayScore():          # Displays the score and top score on the screen
@@ -334,11 +344,16 @@ def displayScore():          # Displays the score and top score on the screen
 	windowSurface.blit(topScore1Text, topScore1Rect)
 	windowSurface.blit(topScore2Text, topScore2Rect)
 
-def drawEnergyBar(manualDrain):                     # draw's energy bar with current amount of energy left in it
+def drawHealthBar(health):      #  health bar with current health left
+	barImg = pygame.transform.scale(pygame.image.load("Data/Image/Energy_bar.png"), (ENERGYW+50, ENERGYH))
+	pygame.draw.rect(windowSurface, RED, (12, WINH - ENERGYH - 33, health, ENERGYH-2))
+	windowSurface.blit(barImg, pygame.Rect(10, WINH - ENERGYH - 35, ENERGYW+50, ENERGYH))
+
+def drawEnergyBar(manualDrain):                     # draw energy bar with current amount of energy left in it
 	global energyBar, superSayan, charging
 	barImg = pygame.transform.scale(pygame.image.load("Data/Image/Energy_bar.png"), (ENERGYW+50, ENERGYH))
-	pygame.draw.rect(windowSurface, YELLOW, (12, WINH - 48, energyBar, ENERGYH-2))
-	windowSurface.blit(barImg, pygame.Rect(10, WINH - 50, ENERGYW, ENERGYH))
+	pygame.draw.rect(windowSurface, YELLOW, (12, WINH - 28, energyBar, ENERGYH-2))
+	windowSurface.blit(barImg, pygame.Rect(10, WINH - 30, ENERGYW+50, ENERGYH))
 	if charging[0]:                    # if kamehameha is charging
 		energyBar -= manualDrain        # decrease the energyBar with value given for manualDrain
 		if energyBar < 0:
@@ -348,9 +363,9 @@ def drawEnergyBar(manualDrain):                     # draw's energy bar with cur
 			if energyBar > 0:       # if energy not zero
 				energyBar -= ENERGYPERSECOND        # reduce the energy
 		else:                       # is SS mode off
-			if energyBar < MAXENERGY:           # if energy not full
+			if energyBar < MAXBARVALUE:           # if energy not full
 				energyBar += ENERGYPERSECOND            # increase the energy
-		if energyBar == 0	or energyBar == MAXENERGY:           # if energy zero or full
+		if energyBar == 0	or energyBar == MAXBARVALUE:           # if energy zero or full
 			energyBar += 0                              # don't  change its value
 
 def pause(text, drawRect, x, y):                # pause the game
@@ -389,7 +404,7 @@ while True:
 	energy = []                         # make initial energy empty
 	objects = []                        # make initial object empty
 	topScore = topScoreFile("load")             # load top score from the 'topScore.txt' file
-	energyBar = MAXENERGY                       # set the energy bar to full
+	energyBar = health = MAXBARVALUE                       # set the energy and health bar to full
 	superSayan = mouseDown = False       # set supersayan and mouse chicked status to false
 	charging = [False, "n"]                     # set charging to false
 	# startingTexts holds texts to be displayed turn by turn on the screen
@@ -421,15 +436,16 @@ while True:
 			playerImg = playerImage("None", superSayan)
 		if not superSayan:
 			pygame.mixer.music.stop()   # if SS is off, stop the SS on music
-		makeAnimatedBackground()
+		Background().animate()
 		displayScore()
 		drawEnergyBar(0)
+		drawHealthBar(health)
 		windowSurface.blit(playerImg, playerRect)
 		moveEnergy()
 		if time%25 == 0:                # add objects on the screen when time is a multiple of 25
 			makeNewObjects(time)
 		moveObjects()
-		if gotHit():                        # check if got hit
+		if isDead():                        # check if got hit
 			if score > topScore:            # if score is higher than top score
 				topScore = score            # make the score top score
 			break                           # break the while loop and go to end of the code
@@ -468,11 +484,11 @@ while True:
 						SOUND.charging.play()
 						drawEnergyBar(50)       # reduce the enegy bar by 50
 				elif event.key == ord("d"):
-					if energyBar >= MAXENERGY:             # if energy is full
+					if energyBar >= MAXBARVALUE:             # if energy is full
 						charging = [True, "e"]             # charging
 						stopAllSounds()
 						SOUND.charging_e.play()
-						drawEnergyBar(MAXENERGY)       # use all the energy
+						drawEnergyBar(MAXBARVALUE)       # use all the energy
 				elif event.key == K_ESCAPE:
 					terminate()
 			if event.type == KEYUP:
@@ -519,6 +535,8 @@ while True:
 				pygame.draw.circle(transparentSurface, (chargeTime*50, 0, 0, chargeTime*40), CENTER, radius)           # draw a red transparent circle
 			windowSurface.blit(transparentSurface, pygame.Rect(0, 0, WINW, WINH))                         # draw the transparent over the windowSurface
 		pygame.mouse.set_pos(playerRect.centerx, playerRect.centery)    # move mouse to player's center
+		if health <= MAXBARVALUE:
+			health += 0.01           # increase health with time
 		pygame.display.update()
 		mainClock.tick(FPS)
 	# Stop all currently playing sounds
