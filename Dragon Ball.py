@@ -35,7 +35,7 @@ level = 0
 
 # game characters
 buu = dict(health = [100*MAXBARVALUE]*2, energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, "n"], abilities = ["Shoot", "None", "Charge"], type = "buu", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKRATE])
-goku = dict(health = [MAXBARVALUE]*2, energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, "n"], abilities = ["SS"], type = "hero", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKRATE])
+goku = dict(health = [MAXBARVALUE]*2, energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, "n"], abilities = [], type = "hero", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKRATE])
 
 class Background:       # holds background components
 	STARMINSIZE = 2
@@ -202,8 +202,9 @@ class Energy:           # manages all sort of energy moves in the game
 			if time%25 == 0:                # add objects on the screen when time is a multiple of 25
 				Object().add(time)
 			time += 1
-			Energy.msve(char)                                    # keep moving the energy blasts on the screen
-			Object.move()                                   # keep moving the objects
+			char.playerImage("Release")
+			self.move(char)                                    # keep moving the energy blasts on the screen
+			Object().move()                                   # keep moving the objects
 			displayScore()                                  # keep displaying the score
 			drawHealthBar(char)                      # draw health bar
 			drawEnergyBar(char, 0)                            # draw no energy while Kamehameha is progressing to the right side
@@ -266,6 +267,7 @@ class Energy:           # manages all sort of energy moves in the game
 					pygame.draw.circle(transparentSurface, (w["radius"]*5, 0, 0, w["radius"]*2), w["center"], w["radius"])           # draw a red transparent circle
 				if w["radius"] > MAXRADIUS:
 					wave.remove(w)
+			char.playerImage("Release Wave")
 			displayScore()                                  # keep displaying the score
 			drawHealthBar(char)
 			drawEnergyBar(char, 0)                            # draw no energy while explosive wave is progressing to the right side
@@ -422,7 +424,6 @@ class Character:
 				mouseDown = False
 
 class Boss(Character):          # manages Boss
-	global score
 	boss = []       # holds info about current boss
 	moveSpeed = 3
 	direction = dict(up = -moveSpeed, down = moveSpeed, none = 0)
@@ -433,6 +434,7 @@ class Boss(Character):          # manages Boss
 		self.boss.append(self)
 
 	def BossAI(self, playerTask, hero):          # AI for using boss according to the player's current task
+		global score
 		# if boss is dead
 		if self.isDead():
 			score += 0.5*self.health[1]     # increase the score by half value of the boss' total hp
