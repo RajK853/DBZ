@@ -34,7 +34,7 @@ DEFAULTATTACKPERIOD = 8         # this determines the interval between the relea
 energyUsage = {"kamehameha" : 50, "explosive wave" : 50, "energy ball" : 90}
 
 # game characters
-buu = dict(health = [MAXBARVALUE]*2, hpRegen = 0.2, energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], abilities = ["Shoot", "None", "Charge"], type = "buu", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD-3])
+buu = dict(health = [MAXBARVALUE]*2, hpRegen = 0.2, energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], abilities = ["Shoot", "None"], type = "buu", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD-3])
 goku = dict(health = [MAXBARVALUE]*2, hpRegen = 0.06, energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], abilities = [], type = "hero", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD])
 
 class Background:       # holds background components
@@ -529,7 +529,8 @@ class Boss(Character):          # manages Boss
 					random.shuffle(self.abilities)  # shuffle the ablilties
 				if level == 5 and "kamehameha" not in self.specialAttacks:
 					self.specialAttacks.append("kamehameha")
-				if level == 7 and "energy ball" not in self.specialAttacks: pass
+				if level == 7 and "energy ball" not in self.specialAttacks:
+					pass
 					#self.specialAttacks.append("energy ball")
 			# renew the task if the time period ends for current task
 			if self.task[1] == 0 and self.task[0] != "Release":      # choose new task if timer is out and boss is not releasing special energy
