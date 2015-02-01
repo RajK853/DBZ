@@ -14,7 +14,7 @@ transparentSurface = windowSurface.convert_alpha()
 pygame.display.set_caption("Dragon Ball")
 mainClock = pygame.time.Clock()
 FPS = 50
-pygame.mixer.music.load("Data/Sound/Hero/SS_mode_on.ogg")        # Background music when Super Sayan mode is on
+pygame.mixer.music.load("Data/Sound/SS_mode_on.ogg")        # Background music when Super Sayan mode is on
 
 # Set up color
 BGCOLOR = (80, 80, 80)
@@ -26,7 +26,6 @@ RED = (200, 10, 10)
 GREEN = (10, 150, 10)
 
 # set up game constants
-SCORETHRESHOLD = 3000       # energy damage will be increased by 1 in every 3000 scores earned
 MAXBARVALUE = 100
 ENERGYBARW = MAXBARVALUE+4
 ENERGYBARH = 10
@@ -70,7 +69,7 @@ class Object:       # manages game objects like meteor, comet and planets. (adds
 			# add no new object on the screen when fighting boss
 			return
 		else:             # if boss not present
-			if time%3000 == 0:           # add new boss at given time interval
+			if time%2500 == 0:           # add new boss at given time interval
 				Boss(buu).addBoss()        # add boss in the game
 		if time%25 == 0:                        # makes new asteoids on the screen in every 25 frames
 			objectSize = random.randint(self.OBJMINSIZE, self.OBJMAXSIZE)
@@ -112,9 +111,10 @@ class Energy:           # manages all sort of energy moves in the game
 	ENERGYW = 55
 	ENERGYH = 25
 	ENERGYDMG = 10
-	MAXENERGYDMG = 20
+	MAXENERGYDMG = 2*ENERGYDMG
 	KAMEHAMEHADMG = 3.8
 	EXPLOSIVEWAVEDMG = 1
+	ENERGYBALLDMG = 4.8
 
 	def add(self, char):       # Adds new energy dictionary to the list energy
 		# choose energy blast's image when super sayan mode is on
@@ -149,14 +149,12 @@ class Energy:           # manages all sort of energy moves in the game
 					if not e: continue                  # if the current energy is already removed, don't continue below
 					if e["rect"].colliderect(o["rect"]):          # check if the current object collides with any energy blast on the screen
 						o["life"][0] -= e["damage"]                 # if it collides, reduce the life of the object according to the damage of the enegy
-						try:
-							char.energies.remove(e)                                # remove the energy blast that collided
+						try: char.energies.remove(e)                                # remove the energy blast that collided
 						except ValueError: pass         # Sometime ValueError occurs when e is not found in char.energies asit might already be deleted
-						prevScore = score
 						if o["life"][0] <= 0:                              # if the life of the object is zero or less
 							score += o["life"][1]                       # increase the score by the value of life of the object
-							if (prevScore%SCORETHRESHOLD) > (score%SCORETHRESHOLD) and self.ENERGYDMG <= self.MAXENERGYDMG:
-								char.eDamage += 0.01          # increase the damage of energy as you destroy more objects but upto the MAXENERGYDMG
+							if char.eDamage <= self.ENERGYDMG + level*7:
+								char.eDamage += 0.1          # increase the damage of energy as you destroy more objects but upto the MAXENERGYDMG
 							Object.objects.remove(o)                           # then remove the object which was destroyed by the energy blast
 				for boss in Boss.boss:
 					try:
@@ -172,8 +170,7 @@ class Energy:           # manages all sort of energy moves in the game
 					if not e: continue                  # if the current energy is already removed, don't continue below
 					if e["rect"].colliderect(o["rect"]):          # check if the current object collides with any energy blast on the screen
 						o["life"][0] -= e["damage"]                 # if it collides, reduce the life of the object according to the damage of the enegy
-						try:
-							char.energies.remove(e)                                # remove the energy blast that collided
+						try: char.energies.remove(e)                                # remove the energy blast that collided
 						except ValueError: pass         # Sometime ValueError occurs when e is not found in char.energies asit might already be deleted
 						if o["life"][0] <= 0:                              # if the life of the object is zero or less
 							Object.objects.remove(o)                           # then remove the object which was destroyed by the energy blast
@@ -189,7 +186,9 @@ class Energy:           # manages all sort of energy moves in the game
 					if e:
 						char.energies.remove(e)                                # remove the energy blast that collided if aleardy not removed
 						continue
-				if e["rect"].right <= 0: char.energies.remove(e)
+				if e["rect"].right <= 0:
+					try: char.energies.remove(e)
+					except: continue
 			# if the current energy isn't removed, draw it
 			if e: windowSurface.blit(e["image"], e["rect"])
 
@@ -200,7 +199,7 @@ class Energy:           # manages all sort of energy moves in the game
 				return True
 		return False
 
-	def kamehameha(self, char):                              # shoots Kamehameha
+	def kamehameha(self, char):                              # shoots Kamehameha that does huge damage in the line of release
 		global score
 		char.sMove["rect"].height = char.rect.height+40           # set its height a little bit greater than player's height
 		if char.type == "hero":
@@ -210,22 +209,17 @@ class Energy:           # manages all sort of energy moves in the game
 			# set the kamehameha's right side equal to the player's left side so that it sees to come out from the hand and moves left
 			char.sMove["rect"].right = char.rect.left
 		char.sMove["rect"].centery = char.rect.centery        # align the kamehameha beam so that it emerges from the mid of the player
-		if char.superSayan:                              # if Super Sayan mode is on
-			char.sMove["damage"] = 2*(self.KAMEHAMEHADMG+char.chargeTime[0])           # Double the kamehameha's damage value in SS mode
-		else:
-			char.sMove["damage"] = self.KAMEHAMEHADMG+char.chargeTime[0]                  # Increase kamehameha's damage according to the time it was being charged
 		kamehamehaImg = pygame.transform.scale(char.sMove["img"], (char.sMove["rect"].width, char.sMove["rect"].height))   # set kamehameha's image to current KAMEHAMEHA["rect'}'s width and height
-		char.sMove["rect"].width += self.ENERGYSPEED+5           # increase Kamehameha's length
+		char.sMove["rect"].width += self.ENERGYSPEED*2           # increase Kamehameha's length
 		windowSurface.blit(kamehamehaImg, char.sMove["rect"])       # draw kamehameha in its current position on the screen
 		if char.type == "hero":
 			for o in Object.objects[:]:
 				if char.sMove["rect"].colliderect(o["rect"]):               # check if the current object collided with kamehameha
 					o["life"][0] -= char.sMove["damage"]                    # subtract life is yes
-					prevScore = score
 					if o["life"][0] <= 0:                                                       # check if objects life is zero or less
 						score += o["life"][1]                                   # increase score
-						if (prevScore%SCORETHRESHOLD) > (score%SCORETHRESHOLD) and self.ENERGYDMG <= self.MAXENERGYDMG:
-							char.eDamage += 0.01          # increase energy damage if less than max energy damage
+						if char.eDamage <= self.ENERGYDMG + level*7:
+							char.eDamage += 0.1          # increase energy damage if less than max energy damage
 						Object.objects.remove(o)                                                       # then remove the object
 			for boss in Boss.boss:                  # loops over all bosses
 				if boss:        # if boss present
@@ -261,7 +255,7 @@ class Energy:           # manages all sort of energy moves in the game
 				char.sMove["damage"] = 0
 				char.sMove["img"] = None
 
-	def explosiveWave(self, char):
+	def explosiveWave(self, char):                  #shoots an explosive wave that damages (relatively small) everything on the screen
 		global score, time, topScore, dead
 		MAXRADIUS = 40
 		wave = [dict(center=(random.randint(0, WINW), random.randint(0, WINH)), radius = random.randint(0, 15)) for x in range((char.chargeTime[0]+1)*40)]
@@ -281,11 +275,10 @@ class Energy:           # manages all sort of energy moves in the game
 				for o in Object.objects[:]:
 					windowSurface.blit(o["image"], o["rect"])
 					o["life"][0] -= x*(self.EXPLOSIVEWAVEDMG*(char.chargeTime[0]/2.5+0.1))
-					prevScore = score
 					if o["life"][0] < 0:
 						score += o["life"][1]                                   # increase score
-						if (prevScore%SCORETHRESHOLD) > (score%SCORETHRESHOLD) and self.ENERGYDMG <= self.MAXENERGYDMG:
-							char.eDamage += 0.01          # increase energy damage if less than max energy damage
+						if char.eDamage <= self.ENERGYDMG+level*7:
+							char.eDamage += 0.1          # increase energy damage if less than max energy damage
 						Object.objects.remove(o)
 				# draw all the energies of all bosses
 				for boss in Boss.boss:
@@ -337,6 +330,50 @@ class Energy:           # manages all sort of energy moves in the game
 			mainClock.tick(FPS/1.5)
 		SOUND.releasing.stop()
 		char.charging = [False, False, "n"]
+
+	def energyBallAnimate(self, char, timer = 0):                  # animates the grow of energyBall as it gets charged
+		global score
+		char.sMove["rect"].width = char.sMove["rect"].height = (15 + (char.chargeTime[0]-timer)*1.2)        # increase energyball's radius with charge time
+		char.sMove["rect"].bottom = char.rect.top               # place the energyball above the player
+		char.sMove["rect"].centerx = char.rect.centerx
+		windowSurface.blit(pygame.transform.scale(char.sMove["img"], char.sMove["rect"].size), char.sMove["rect"])
+
+	def energyBall(self, char): # throws an devastating energy ball that damages everything in its path
+		global score
+		if char.sMove["rect"].centery <= char.rect.centery:         # if the energyball is still above the player
+			char.sMove["rect"].centery += 8             # bring it down until it is approximately the same height that of player
+		if char.type == "hero":
+			# for hero, move the energyball to right
+			char.sMove["rect"].left += 2*self.ENERGYSPEED
+			if char.sMove["rect"].left > WINW+50:
+				# set false to energy releasing status if the ebenrgyball went past the right side
+				char.charging = [False, False, "n"]
+		else:
+			# for boss, move the energyball to left
+			char.sMove["rect"].right -= 2*self.ENERGYSPEED
+			if char.sMove["rect"].right < -50:
+				# set false to energy releasing status if the ebenrgyball went past the left side
+				char.charging = [False, False, "n"]
+		# damage anything that comes in contact
+		for o in Object.objects[:]:
+			if o["rect"].colliderect(char.sMove["rect"]):
+				o["life"][0] -= char.sMove["damage"]
+				if o["life"][0] <= 0:
+					if char.type == "hero":
+						score += o["life"][1]
+					Object.objects.remove(o)
+		if char.type == "hero":
+			for boss in Boss.boss:
+				if self.collides(self, char.sMove, boss.energies): pass					# if energy ball collides with any energy, it will remove them
+				if char.sMove["rect"].colliderect(boss.rect):
+					boss.health[0] -= char.sMove["damage"]
+					if boss.health[0] < 0: boss.health[0] = 0
+		else:
+			if self.collides(self, char.sMove, hero.energies): pass
+			if char.sMove["rect"].colliderect(hero.rect):
+				hero.health[0] -= char.sMove["damage"]/80
+			if hero.health[0] < 0: hero.health[0] = 0
+		windowSurface.blit(pygame.transform.scale(char.sMove["img"], char.sMove["rect"].size), char.sMove["rect"])
 
 class Character:
 	size = (35, 80)
@@ -472,24 +509,24 @@ class Character:
 				pygame.event.clear()        # clear all events in queue to prevent the paused screen to be resumed accidently
 				self.abilities.append("SS")
 				upgraded = True
-				pause("Press 'A' to activate Super Sayan!", False, -1, -1)
+				pause("Press 'A' to activate Super Sayan! (Drains energy gradually)", False, -1, -1)
 		elif level == 5:
 			if "explosive wave" not in self.abilities:
 				pygame.event.clear()
 				self.abilities.append("explosive wave")
 				upgraded = True
-				pause("Press 'D' to use Explosive Wave! (Drains half energy)", False, -1, -1)
+				pause("Hold 'D' to use Explosive Wave! (Drains half energy)", False, -1, -1)
 		elif level == 2:
 			if "kamehameha" not in self.abilities:
 				pygame.event.clear()
 				self.abilities.append("kamehameha")
 				upgraded = True
-				pause("Press 'Space' to use Kamehameha! (Drains half energy)", False, -1, -1)
+				pause("Hold 'Space' to use Kamehameha! (Drains half energy)", False, -1, -1)
 		if upgraded:            # if any of the ability was added
 			if mouseDown:       # if the user was shooting while the player levelup-ed, stop the shooting after resuming
 				mouseDown = False
 
-class Boss(Character):          # manages Boss
+class Boss(Character):          # creates and manages Boss
 	boss = []       # holds info about current boss
 	moveSpeed = 2.5
 	direction = dict(up = -moveSpeed, down = moveSpeed, none = 0)
@@ -529,7 +566,7 @@ class Boss(Character):          # manages Boss
 				# if the player is in approximately same height to boss and the boss is not moving while the player shoots,
 				# then get new direction instruction. Note: new dir might be "none" again in which case the boss will not move and get hit by energy
 				if self.rect.top < hero.rect.centery < self.rect.bottom and playerTask == "Shoot" and self.dir[0] == "none":
-					self.dir = [random.choice(["up",  "down",  "none"]), 2*FPS]
+					self.dir = [random.choice(["up",  "down",  "none"]), random.randint(1, 3)*FPS]
 				# at level 2 and 3, give the boss the Blink and Charge ability and increase Shooting chances
 				if level in [2, 3] and self.abilities.count("Blink") < level-1:
 					self.abilities.append("Blink")
@@ -542,26 +579,49 @@ class Boss(Character):          # manages Boss
 				if level >= 2 and "explosive wave" not in self.specialAttacks:
 					self.specialAttacks.append("explosive wave")
 					buu["specialAttacks"].append("explosive wave")
-				if level == 3 and "kamehameha" not in self.specialAttacks:
+				if level >= 2 and "kamehameha" not in self.specialAttacks:
 					self.specialAttacks.append("kamehameha")
 					buu["specialAttacks"].append("kamehameha")
-				if level == 5 and "energy ball" not in self.specialAttacks:
-					pass
-					#self.specialAttacks.append("energy ball")
-			# renew the task if the time period ends for current task
-			if self.task[1] == 0 and self.task[0] != "Release":      # choose new task if timer is out and boss is not releasing special energy
+				if level >= 5 and "energy ball" not in self.specialAttacks:
+					self.specialAttacks.append("energy ball")
+					buu["specialAttacks"].append("energy ball")
+			# choose new task if timer for current task is out and boss is neither charing nor releasing any special energy
+			if self.task[1] == 0 and self.task[0] != "Release" and not self.charging[0]:
 				while True:
-					self.task = [random.choice(self.abilities), random.randint(1, 2)*FPS]        # perform each task for only 1 or 3 seconds
+					self.task = [random.choice(self.abilities), random.randint(1, 2)*FPS]        # perform each task for only 1 or 2 seconds
 					if self.task[0] == "Charge":
 						self.task[1] = self.chargeTime[0] = random.randint(1, 4)*FPS        # if the current task is charge, charge the special attack in the time range 1-4
 						self.charging = [True, False, random.choice(self.specialAttacks)]
 						if self.energy[0] >= energyUsage[self.charging[2]]:     # if energy is sufficient for the current special attack
 							self.energy[0] -= energyUsage[self.charging[2]]        # drain required energy
-							break
-						else: self.charging = [False, False, "n"]       # change the charging status to default
+							# play sound for charging an energy and set required image and damage for them
+							if self.charging[2] == "kamehameha":
+								SOUND.boss_charging.play()
+								self.sMove["img"] = pygame.image.load("Data/Image/Hero/kamehameha.png")
+								if self.superSayan:                              # if Super Sayan mode is on
+									# Double the kamehameha's damage value in SS mode
+									self.sMove["damage"] = 2*(Energy.KAMEHAMEHADMG+self.chargeTime[0]+int(level/5))
+								else:
+									# Increase kamehameha's damage according to the time it was being charged
+									self.sMove["damage"] = Energy.KAMEHAMEHADMG+self.chargeTime[0]+int(level/5)
+							elif self.charging[2] == "explosive wave":
+								SOUND.charging_e.play()
+								# no need to assign image and damage as explosive wave doesn't use self.sMove
+							elif self.charging[2] == "energy ball":
+								self.sMove["img"] = pygame.image.load("Data/Image/Buu/Energy_ball.png")
+								if self.superSayan:                              # if Super Sayan mode is on
+									self.sMove["damage"] = 2*(Energy.ENERGYBALLDMG+self.chargeTime[0]+int(level/5))
+								else:
+									self.sMove["damage"] = Energy.ENERGYBALLDMG+self.chargeTime[0]+int(level/5)
+							break       # break the while loop
+						else:
+							self.charging = [False, False, "n"]       # change the charging status to default if energy not sufficient
 					else:           # if other tasks chosen other than Charge
 						if self.task[0] == "Blink": self.task[1] = 1            # blink only once in one frame
 						break
+			if self.charging == [True, False, "energy ball"]:
+				# play the animation if energyball is charging
+				Energy.energyBallAnimate(Energy, self, self.task[1])
 			if self.task == ["Charge", 1]:
 				self.task[0] = "Release"
 				self.charging[0], self.charging[1] = False, True            # when releasing, set charging to False and Releasing to True
@@ -578,7 +638,7 @@ class Boss(Character):          # manages Boss
 			if self.rect.bottom >= WINH:
 				self.rect.bottom = WINH
 				self.dir[1] = 0     # if the Boss reaches bottom, renew the direction next time
-			if self.dir[1] == 0: self.dir = [random.choice(["up",  "down",  "none"]), 1*FPS]        # select new direction and perform it for 1 second
+			if self.dir[1] == 0: self.dir = [random.choice(["up",  "down",  "none", "down", "up"]), random.randint(1, 3)*FPS]        # select new direction and perform it for 1-3 seconds
 
 	def performTask(self, task):
 		Energy.move(Energy, self)       # move boss' energies
@@ -591,20 +651,29 @@ class Boss(Character):          # manages Boss
 			self.blink(self.dir[0])
 		elif task == "Release":
 			if self.charging[2] == "explosive wave":
+				SOUND.charging_e.stop()
+				SOUND.boss_releasing.play()
 				Energy.explosiveWave(Energy, self)
 			elif self.charging[2] == "kamehameha":
-				self.sMove["img"] = pygame.image.load("Data/Image/Hero/kamehameha.png")
+				SOUND.boss_charging.stop()
+				SOUND.boss_releasing.play()
 				Energy.kamehameha(Energy, self)
+			elif self.charging[2] == "energy ball":
+				SOUND.boss_releasing.play()
+				Energy.energyBall(Energy, self)
 			if not self.charging[1]:
+				SOUND.boss_releasing.stop()
 				self.task = ["None", 1]
 
 class SOUND:    # Holds all the sound files' locations and names
-	goSS = pygame.mixer.Sound("Data/Sound/Hero/Go_SS.ogg")           # Sound when going to Super Sayan mode
-	charging = pygame.mixer.Sound("Data/Sound/Hero/Charging.ogg")        # Sound when charging Special Attack like Kamehameha
-	releasing = pygame.mixer.Sound("Data/Sound/Hero/Releasing.ogg")      # Sound when releasing Special Attack like Kamehameha
-	blink = pygame.mixer.Sound("Data/Sound/Hero/Blink.ogg")                                 # Sound when character blinks
-	shoot = pygame.mixer.Sound("Data/Sound/Hero/Shoot.ogg")                  # Sound for normal energy shooting
-	charging_e = pygame.mixer.Sound("Data/Sound/Hero/Charging_e.ogg")        # Sound when charging explosive wave
+	goSS = pygame.mixer.Sound("Data/Sound/Go_SS.ogg")           # Sound when going to Super Sayan mode
+	charging = pygame.mixer.Sound("Data/Sound/Charging.ogg")        # Sound when charging Special Attack like Kamehameha
+	releasing = pygame.mixer.Sound("Data/Sound/Releasing.ogg")      # Sound when releasing Special Attack like Kamehameha
+	boss_charging = pygame.mixer.Sound("Data/Sound/boss_Charging.ogg")
+	boss_releasing = pygame.mixer.Sound("Data/Sound/boss_Releasing.ogg")
+	blink = pygame.mixer.Sound("Data/Sound/Blink.ogg")                                 # Sound when character blinks
+	shoot = pygame.mixer.Sound("Data/Sound/Shoot.ogg")                  # Sound for normal energy shooting
+	charging_e = pygame.mixer.Sound("Data/Sound/Charging_e.ogg")        # Sound when charging explosive wave
 
 def terminate():            # save the current top score and close the game
 	topScoreFile("save")
@@ -782,10 +851,10 @@ def main():
 					playerTask = Energy().kamehameha(hero)       # draw kamehameha image animation
 
 			Object().move()
-			hero.playerImage(playerTask)        # update player's image according to the current task
 			displayScore()
 			drawEnergyBar(hero)
 			drawHealthBar(hero)
+			hero.playerImage(playerTask)        # update player's image according to the current task
 			Energy().move(hero)
 
 			if not Boss.boss:       # if Boss.boss is an emtpy list
@@ -844,7 +913,6 @@ def main():
 						elif event.key == K_SPACE and "kamehameha" in hero.abilities:
 							if hero.energy[0] >= energyUsage["kamehameha"]:             # if energy is atleast 50
 								hero.charging = [True, False, "k"]             # charging kamehameha
-								hero.sMove["img"] = pygame.image.load("Data/Image/Hero/kamehameha.png")
 								stopAllSounds()
 								SOUND.charging.play()
 								drawEnergyBar(hero, energyUsage["kamehameha"])       # drain energy by 50
@@ -861,6 +929,13 @@ def main():
 							if event.key == K_SPACE and hero.charging[2] == "k":    # if charging Kamehameha
 								SOUND.charging.stop()       # stop the charging sound
 								playerTask = "Release"
+								hero.sMove["img"] = pygame.image.load("Data/Image/Hero/kamehameha.png")
+								if hero.superSayan:                              # if Super Sayan mode is on
+									# Double the kamehameha's damage value in SS mode
+									hero.sMove["damage"] = 2*(Energy.KAMEHAMEHADMG+hero.chargeTime[0]+int(level/3))
+								else:
+									# Increase kamehameha's damage according to the time it was being charged
+									hero.sMove["damage"] = Energy.KAMEHAMEHADMG+hero.chargeTime[0]+int(level/3)
 								SOUND.releasing.play()      # play the kamehameha releasing sound
 								hero.charging = [False, True, "k"]                # stop charging
 							elif event.key == ord("d") and hero.charging[2] == "e":
