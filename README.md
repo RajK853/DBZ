@@ -14,7 +14,7 @@ Requirements:
 2) Pygame 3.x
 
 Note: If you don't meet the above requirements, you can use the exe version of the game above.
-If you have already have an obsolete exe version of this game, you don't have to download the 
+If you already have an obsolete exe version of this game, you don't have to download the 
 DBZ (exe version).zip again. Just download the "Dragon_Ball.py" and "Data" folder 
 (may not be necessary but recommended) and copy them to the folder with the "DBZ.exe" file.
  Enjoy the game and feel free to leave any feedbacks and suggestions or report any bug at 
