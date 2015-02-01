@@ -33,7 +33,7 @@ DEFAULTATTACKPERIOD = 8         # this determines the interval between the relea
 energyUsage = {"kamehameha" : 50, "explosive wave" : 50, "energy ball" : 90}
 
 # game characters
-buu = dict(health = [MAXBARVALUE]*2, hpRegen = "0.0003*self.health[1]", energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], specialAttacks = [], abilities = ["Shoot", "None"], type = "buu", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD-3])
+buu = dict(health = [MAXBARVALUE]*2, hpRegen = "0.0001*self.health[1]", energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], specialAttacks = [], abilities = ["Shoot", "None"], type = "buu", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD-3])
 goku = dict(health = [MAXBARVALUE]*2, hpRegen = "0.0003*hero.health[1]", energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], abilities = [], type = "hero", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD])
 
 class Background:       # holds background components
@@ -69,10 +69,10 @@ class Object:       # manages game objects like meteor, comet and planets. (adds
 			# add no new object on the screen when fighting boss
 			return
 		else:             # if boss not present
-			if time%2100 == 0:           # add new boss at given time interval
+			if time%2000 == 0:           # add new boss at given time interval
 				Boss(buu).addBoss()        # add boss in the game
 				return
-		if time%25 == 0:                        # makes new asteoids on the screen in every 25 frames
+		if time%27 == 0:                        # makes new asteoids on the screen in every 25 frames
 			objectSize = random.randint(self.OBJMINSIZE, self.OBJMAXSIZE)
 			# randomly chooose the asteroid image among the three asteroids
 			objectImg = pygame.transform.scale(random.choice([pygame.image.load("Data/Image/Objects/asteroid1.png"),
@@ -861,8 +861,7 @@ def main():
 			if not hero.superSayan:
 				pygame.mixer.music.stop()
 
-			if time%25 == 0:                # add objects on the screen when time is a multiple of 25
-				Object().add(time)
+			Object().add(time)
 
 			Background().animate()
 
