@@ -33,8 +33,8 @@ DEFAULTATTACKPERIOD = 8         # this determines the interval between the relea
 energyUsage = {"kamehameha" : 50, "explosive wave" : 50, "energy ball" : 90}
 
 # game characters
-buu = dict(health = [MAXBARVALUE]*2, hpRegen = 0.08, energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], specialAttacks = [], abilities = ["Shoot", "None"], type = "buu", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD-3])
-goku = dict(health = [MAXBARVALUE]*2, hpRegen = 0.07, energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], abilities = [], type = "hero", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD])
+buu = dict(health = [MAXBARVALUE]*2, hpRegen = "0.0003*self.health[1]", energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], specialAttacks = [], abilities = ["Shoot", "None"], type = "buu", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD-3])
+goku = dict(health = [MAXBARVALUE]*2, hpRegen = "0.0003*hero.health[1]", energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], abilities = [], type = "hero", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD])
 
 class Background:       # holds background components
 	STARMINSIZE = 2
@@ -69,8 +69,9 @@ class Object:       # manages game objects like meteor, comet and planets. (adds
 			# add no new object on the screen when fighting boss
 			return
 		else:             # if boss not present
-			if time%2500 == 0:           # add new boss at given time interval
+			if time%2100 == 0:           # add new boss at given time interval
 				Boss(buu).addBoss()        # add boss in the game
+				return
 		if time%25 == 0:                        # makes new asteoids on the screen in every 25 frames
 			objectSize = random.randint(self.OBJMINSIZE, self.OBJMAXSIZE)
 			# randomly chooose the asteroid image among the three asteroids
@@ -114,7 +115,7 @@ class Energy:           # manages all sort of energy moves in the game
 	MAXENERGYDMG = 2*ENERGYDMG
 	KAMEHAMEHADMG = 3.8
 	EXPLOSIVEWAVEDMG = 1
-	ENERGYBALLDMG = 4.8
+	ENERGYBALLDMG = 5
 
 	def add(self, char):       # Adds new energy dictionary to the list energy
 		# choose energy blast's image when super sayan mode is on
@@ -227,7 +228,7 @@ class Energy:           # manages all sort of energy moves in the game
 						pass
 					try:
 						if char.sMove["rect"].colliderect(boss.rect):           # if current boss collides with kamehameha,
-							boss.health[0] -= char.sMove["damage"]/2              # reduce boss' life as necessary
+							boss.health[0] -= char.sMove["damage"]*1.5              # reduce boss' life as necessary
 					except AttributeError: pass                   # Attribute error arise if the boss is added but its rectangle isn't instalized yet
 			if char.sMove["rect"].right >= WINW+500:
 				# stop the releasing sound after kamehameha is over
@@ -243,7 +244,7 @@ class Energy:           # manages all sort of energy moves in the game
 			if self.collides(self, char.sMove, hero.energies):
 				pass
 			if char.sMove["rect"].colliderect(hero.rect):
-				hero.health[0] -= char.sMove["damage"]/80
+				hero.health[0] -= char.sMove["damage"]/90
 				if hero.health[0] < 0: hero.health[0] = 0
 			if char.sMove["rect"].left < -500:
 				# stop the releasing sound after kamehameha is over
@@ -338,17 +339,29 @@ class Energy:           # manages all sort of energy moves in the game
 		char.sMove["rect"].centerx = char.rect.centerx
 		windowSurface.blit(pygame.transform.scale(char.sMove["img"], char.sMove["rect"].size), char.sMove["rect"])
 
-	def energyBall(self, char): # throws an devastating energy ball that damages everything in its path
+	def energyBall(self, char): # throws a tracking and devastating energy ball that damages everything in its path
 		global score
-		if char.sMove["rect"].centery <= char.rect.centery:         # if the energyball is still above the player
-			char.sMove["rect"].centery += 8             # bring it down until it is approximately the same height that of player
 		if char.type == "hero":
+			d = 10000
+			for boss in Boss.boss:
+				if abs(boss.rect.centery-char.sMove["rect"].centery) < d:
+					i = Boss.boss.index(boss)
+					d = abs(boss.rect.centery-char.sMove["rect"].centery)
+			boss = Boss.boss[i]     # nearest boss
+			if char.sMove["rect"].centery < boss.rect.centery:         # if the energyball is above the boss
+				char.sMove["rect"].centery += 6+(level/10)             # bring it down
+			elif char.sMove["rect"].centery > boss.rect.centery:        # if the energy ball is below the boss
+				char.sMove["rect"].centery -= 6+(level/10)             # bring it up
 			# for hero, move the energyball to right
 			char.sMove["rect"].left += 2*self.ENERGYSPEED
 			if char.sMove["rect"].left > WINW+50:
 				# set false to energy releasing status if the ebenrgyball went past the right side
 				char.charging = [False, False, "n"]
-		else:
+		else:       # if the char is a boss
+			if char.sMove["rect"].centery < hero.rect.centery:         # if the energyball is above the hero
+				char.sMove["rect"].centery += 6+(level/10)             # bring it down
+			elif char.sMove["rect"].centery > hero.rect.centery:        # if the energy ball is below the hero
+				char.sMove["rect"].centery -= 6+(level/10)             # bring it up
 			# for boss, move the energyball to left
 			char.sMove["rect"].right -= 2*self.ENERGYSPEED
 			if char.sMove["rect"].right < -50:
@@ -371,7 +384,7 @@ class Energy:           # manages all sort of energy moves in the game
 		else:
 			if self.collides(self, char.sMove, hero.energies): pass
 			if char.sMove["rect"].colliderect(hero.rect):
-				hero.health[0] -= char.sMove["damage"]/80
+				hero.health[0] -= char.sMove["damage"]/30
 			if hero.health[0] < 0: hero.health[0] = 0
 		windowSurface.blit(pygame.transform.scale(char.sMove["img"], char.sMove["rect"].size), char.sMove["rect"])
 
@@ -385,7 +398,7 @@ class Character:
 			self.health = copy.deepcopy(char["health"])         # hp for hero
 			self.eDamage = Energy.ENERGYDMG                     # energy damage for hero
 		else:
-			self.health = [(level)*3*h for h in char["health"]]     # hp for boss
+			self.health = [(level)*5*h for h in char["health"]]     # hp for boss
 			self.eDamage = Energy.ENERGYDMG + level             # energy daage for boss
 			if self.eDamage > Energy.MAXENERGYDMG: self.eDamage = Energy.MAXENERGYDMG       # set limit to boss' energy damage
 			self.specialAttacks = char["specialAttacks"]        # every boss has a list where they have their special abilities stored later
@@ -504,13 +517,13 @@ class Character:
 	def levelUp(self, score):           # level up hero and unlock new attacks according to the score
 		global mouseDown, level
 		upgraded = False        # tell if any ability was added
-		if level == 7:
+		if level == 5:
 			if "SS" not in self.abilities:
 				pygame.event.clear()        # clear all events in queue to prevent the paused screen to be resumed accidently
 				self.abilities.append("SS")
 				upgraded = True
 				pause("Press 'A' to activate Super Sayan! (Drains energy gradually)", False, -1, -1)
-		elif level == 5:
+		elif level == 3:
 			if "explosive wave" not in self.abilities:
 				pygame.event.clear()
 				self.abilities.append("explosive wave")
@@ -549,6 +562,9 @@ class Boss(Character):          # creates and manages Boss
 		if self.task[0] != "Blink": self.playerImage(self.task[0])     # blinking task draw it's player image separately
 		# if boss is dead
 		if self.isDead():
+			# stop boss' music if dead
+			SOUND.boss_releasing.stop()
+			SOUND.boss_charging.stop()
 			if self.energies:
 				Energy.move(Energy, self)       # move boss' energies
 			else:
@@ -557,11 +573,11 @@ class Boss(Character):          # creates and manages Boss
 			if not self.boss:
 				level += 1      # once the boss is removed, increase the level
 				# increase hero's hp with every level
-				hero.health[0] += 50
-				hero.health[1] += 50
+				hero.health[0] += 100
+				hero.health[1] += 100
 			time += 1
-		else:
-			if self.health[0] < self.health[1]: self.health[0] += self.hpRegen      # regenerate health with time
+		else:           # if alive
+			if self.health[0] < self.health[1]: self.health[0] += eval(self.hpRegen)      # regenerate health with time
 			if level > 1:       # Use this feature in levels other than level 1
 				# if the player is in approximately same height to boss and the boss is not moving while the player shoots,
 				# then get new direction instruction. Note: new dir might be "none" again in which case the boss will not move and get hit by energy
@@ -582,9 +598,10 @@ class Boss(Character):          # creates and manages Boss
 				if level >= 2 and "kamehameha" not in self.specialAttacks:
 					self.specialAttacks.append("kamehameha")
 					buu["specialAttacks"].append("kamehameha")
-				if level >= 5 and "energy ball" not in self.specialAttacks:
+				if level >= 3 and self.specialAttacks.count("energy ball") <=2:     # add two energy ball so that it's chance of being chosen is greater
 					self.specialAttacks.append("energy ball")
 					buu["specialAttacks"].append("energy ball")
+					random.shuffle(self.specialAttacks)
 			# choose new task if timer for current task is out and boss is neither charing nor releasing any special energy
 			if self.task[1] == 0 and self.task[0] != "Release" and not self.charging[0]:
 				while True:
@@ -600,19 +617,19 @@ class Boss(Character):          # creates and manages Boss
 								self.sMove["img"] = pygame.image.load("Data/Image/Hero/kamehameha.png")
 								if self.superSayan:                              # if Super Sayan mode is on
 									# Double the kamehameha's damage value in SS mode
-									self.sMove["damage"] = 2*(Energy.KAMEHAMEHADMG+self.chargeTime[0]+int(level/5))
+									self.sMove["damage"] = 2*(Energy.KAMEHAMEHADMG+self.chargeTime[0]+int(level/3))
 								else:
 									# Increase kamehameha's damage according to the time it was being charged
-									self.sMove["damage"] = Energy.KAMEHAMEHADMG+self.chargeTime[0]+int(level/5)
+									self.sMove["damage"] = Energy.KAMEHAMEHADMG+self.chargeTime[0]+int(level/3)
 							elif self.charging[2] == "explosive wave":
 								SOUND.charging_e.play()
 								# no need to assign image and damage as explosive wave doesn't use self.sMove
 							elif self.charging[2] == "energy ball":
 								self.sMove["img"] = pygame.image.load("Data/Image/Buu/Energy_ball.png")
 								if self.superSayan:                              # if Super Sayan mode is on
-									self.sMove["damage"] = 2*(Energy.ENERGYBALLDMG+self.chargeTime[0]+int(level/5))
+									self.sMove["damage"] = 2*(Energy.ENERGYBALLDMG+self.chargeTime[0]/2+int(level/5))
 								else:
-									self.sMove["damage"] = Energy.ENERGYBALLDMG+self.chargeTime[0]+int(level/5)
+									self.sMove["damage"] = Energy.ENERGYBALLDMG+self.chargeTime[0]/2+int(level/5)
 							break       # break the while loop
 						else:
 							self.charging = [False, False, "n"]       # change the charging status to default if energy not sufficient
@@ -640,7 +657,7 @@ class Boss(Character):          # creates and manages Boss
 				self.dir[1] = 0     # if the Boss reaches bottom, renew the direction next time
 			if self.dir[1] == 0: self.dir = [random.choice(["up",  "down",  "none", "down", "up"]), random.randint(1, 3)*FPS]        # select new direction and perform it for 1-3 seconds
 
-	def performTask(self, task):
+	def performTask(self, task):            # performs given task
 		Energy.move(Energy, self)       # move boss' energies
 		if task == "None":
 			pass
@@ -717,15 +734,16 @@ def topScoreFile(mode):           # save topScore in a file and load it later
 
 def displayScore():          # Displays the score, top score and level on the screen
 	global score, topScore, level
-	if level > 10: levelColor = RED
-	elif level > 5: levelColor = YELLOW
+	if level > 7: levelColor = RED
+	elif level > 3: levelColor = YELLOW
 	else: levelColor = GREEN
-	score1Text, score1Rect = writeText("Score:", WHITE, 24, 10, 10, True)
-	score2Text, score2Rect = writeText(str(score), WHITE, 24, score1Rect.right+5, 10, True)
-	topScore1Text, topScore1Rect = writeText("Top Score:", WHITE, 24, 10, score1Rect.bottom+3, True)
-	topScore2Text, topScore2Rect = writeText(str(topScore), YELLOW, 24, topScore1Rect.right+5, score1Rect.bottom+3, True)
-	levelText1, levelRect1 = writeText("Level:", WHITE, 24, 10, topScore2Rect.bottom+3, True)
-	levelText2, levelRect2 = writeText(str(level), levelColor, 26, levelRect1.right+5, topScore2Rect.bottom+3, True)
+	score1Text, score1Rect = writeText("Score:", WHITE, 20, 10, 10, True)
+	score2Text, score2Rect = writeText(str(score), WHITE, 20, score1Rect.right+5, 10, True)
+	topScore1Text, topScore1Rect = writeText("Top Score:", WHITE, 20, 10, score1Rect.bottom+3, True)
+	topScore2Text, topScore2Rect = writeText(str(topScore), YELLOW, 20, topScore1Rect.right+5, score1Rect.bottom+3, True)
+	levelText1, levelRect1 = writeText("Level:", WHITE, 20, 10, topScore2Rect.bottom+3, True)
+	levelText2, levelRect2 = writeText(str(level), levelColor, 28, levelRect1.right+5, topScore2Rect.bottom+3, True)
+	levelRect2.centery = levelRect1.centery
 	windowSurface.blit(score1Text, score1Rect)
 	windowSurface.blit(score2Text, score2Rect)
 	windowSurface.blit(topScore1Text, topScore1Rect)
@@ -794,6 +812,8 @@ def pause(text, drawRect, x, y):                # pause the game
 def stopAllSounds():
 	SOUND.goSS.stop()
 	SOUND.releasing.stop()
+	SOUND.boss_releasing.stop()
+	SOUND.boss_charging.stop()
 	SOUND.charging.stop()
 	SOUND.blink.stop()
 	SOUND.charging_e.stop()
@@ -964,7 +984,7 @@ def main():
 				playerTask = "Charge"
 				hero.drawEnergySphere()
 			if hero.health[0] <= MAXBARVALUE:
-				hero.health[0] += hero.hpRegen           # slowly increase health with time
+				hero.health[0] += eval(hero.hpRegen)           # slowly increase health with time
 			pygame.display.update()
 			mainClock.tick(FPS)
 		# Stop all currently playing sounds
