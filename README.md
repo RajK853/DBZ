@@ -4,12 +4,12 @@
 you can unlock new abilites such as Kamehameha, Explosive Wave and Super Sayan mode. 
 Play as a sayan and become a sayan. Let's see if you can set an unbeatable score :)
 
-##Features:
+## Features:
 * Easy UI
 * Special moves present
 * Boss-feature added
 
-##Requirements:
+## Requirements:
 * Python 3.x
 * Pygame 3.x
 
