@@ -320,11 +320,6 @@ class Energy:           # manages all sort of energy moves in the game
 			displayScore()                                  # keep displaying the score
 			drawHealthBar(char)
 			drawEnergyBar(char)                            # draw no energy while explosive wave is progressing to the right side
-			if char.isDead():                        # check if got hit
-				dead = True
-				if score > topScore:            # if score is higher than top score
-					topScore = score            # make the score top score
-				break                           # break the while loop and go to end of the code
 			windowSurface.blit(transparentSurface, pygame.Rect(0, 0, WINW, WINH))                         # draw the transparent over the windowSurface
 			windowSurface.blit(char.Img, char.rect)
 			pygame.display.update()
@@ -424,10 +419,12 @@ class Character:
 						self.health[0] -= o["life"][1]/5          # take full damage in normal mode
 					Object.objects.remove(o)
 				if self.health[0] <= 0:
+					self.health[0] = 0
 					return True                                     # return True
 			return False                # else return False
 		else:           # for boss, only check if his hp <=0
 			if self.health[0] <= 0:
+				self.health[0] = 0
 				return True                                     # return True
 			return False                # else return False
 
@@ -565,6 +562,7 @@ class Boss(Character):          # creates and manages Boss
 			# stop boss' music if dead
 			SOUND.boss_releasing.stop()
 			SOUND.boss_charging.stop()
+			SOUND.charging_e.stop()
 			if self.energies:
 				Energy.move(Energy, self)       # move boss' energies
 			else:
@@ -692,19 +690,19 @@ class SOUND:    # Holds all the sound files' locations and names
 	shoot = pygame.mixer.Sound("Data/Sound/Shoot.ogg")                  # Sound for normal energy shooting
 	charging_e = pygame.mixer.Sound("Data/Sound/Charging_e.ogg")        # Sound when charging explosive wave
 
+class Text:     # monitors all the text objects of the game
+	def __init__(self, text = " ", color = WHITE, size = 20, x = 0, y = 0):
+		self.text = pygame.font.SysFont("Comic Sans MS", size, True).render(text, True, color)
+		self.rect = self.text.get_rect()
+		self.rect.topleft = (x, y)
+
+	def write(self):        # writes the text object in the screen
+		windowSurface.blit(self.text, self.rect)
+
 def terminate():            # save the current top score and close the game
 	topScoreFile("save")
 	pygame.quit()
 	exit()
-
-def writeText(text, color, size, x, y, returnTextInfo):           # writes text on the surface
-	font = pygame.font.SysFont("Comic Sans MS", size, True)
-	textObj = font.render(text, True, color)
-	textRect = textObj.get_rect()
-	textRect.topleft = (x, y)
-	if returnTextInfo:              # if rectangle data requested, return textObj and textRect
-		return textObj, textRect
-	windowSurface.blit(textObj, textRect)
 
 def topScoreFile(mode):           # save topScore in a file and load it later
 	if mode == "load":                      # to load score
@@ -718,8 +716,8 @@ def topScoreFile(mode):           # save topScore in a file and load it later
 				# If someone messes with the topScore file
 				if (ord(i)-ord("a")) > 9:
 					windowSurface.fill(BGCOLOR)
-					writeText("Nice try messing with the top score file.", WHITE, 24, 150, 135, False)
-					writeText("But you are busted!! Top score is resetted to 0.", WHITE, 24, 100, 165, False)
+					Text("Nice try messing with the top score file.", WHITE, 24, 150, 135).write()
+					Text("But you are busted!! Top score is resetted to 0.", WHITE, 24, 100, 165).write()
 					with open("Data/topScore.txt", "w") as file:
 						file.write("a")
 					pause("Press a key loser!", False, -1, -1)
@@ -737,19 +735,17 @@ def displayScore():          # Displays the score, top score and level on the sc
 	if level > 7: levelColor = RED
 	elif level > 3: levelColor = YELLOW
 	else: levelColor = GREEN
-	score1Text, score1Rect = writeText("Score:", WHITE, 20, 10, 10, True)
-	score2Text, score2Rect = writeText(str(score), WHITE, 20, score1Rect.right+5, 10, True)
-	topScore1Text, topScore1Rect = writeText("Top Score:", WHITE, 20, 10, score1Rect.bottom+3, True)
-	topScore2Text, topScore2Rect = writeText(str(topScore), YELLOW, 20, topScore1Rect.right+5, score1Rect.bottom+3, True)
-	levelText1, levelRect1 = writeText("Level:", WHITE, 20, 10, topScore2Rect.bottom+3, True)
-	levelText2, levelRect2 = writeText(str(level), levelColor, 28, levelRect1.right+5, topScore2Rect.bottom+3, True)
-	levelRect2.centery = levelRect1.centery
-	windowSurface.blit(score1Text, score1Rect)
-	windowSurface.blit(score2Text, score2Rect)
-	windowSurface.blit(topScore1Text, topScore1Rect)
-	windowSurface.blit(topScore2Text, topScore2Rect)
-	windowSurface.blit(levelText1, levelRect1)
-	windowSurface.blit(levelText2, levelRect2)
+	scoreField = Text("Score:", WHITE, 20, 10, 10)
+	scoreText= Text(str(score), WHITE, 20, scoreField.rect.right+5, 10).write()
+	topScoreField = Text("Top Score:", WHITE, 20, 10, scoreField.rect.bottom+3)
+	topScoreText = Text(str(topScore), YELLOW, 20, topScoreField.rect.right+5, scoreField.rect.bottom+3).write()
+	levelField = Text("Level:", WHITE, 20, 10, topScoreField.rect.bottom+3)
+	levelText = Text(str(level), levelColor, 28, levelField.rect.right+5, topScoreField.rect.bottom+3)
+	levelText.rect.centery = levelField.rect.centery
+	levelText.write()
+	levelField.write()
+	scoreField.write()
+	topScoreField.write()
 
 def drawHealthBar(char):      #  health bar with current health left
 	if char.type == "hero":
@@ -790,14 +786,14 @@ def pause(text, drawRect, x, y):                # pause the game
 	global mouseDown
 	pygame.mouse.set_visible(True)              # make mouse visible while paused
 	while True:
-		textObj, textRect = writeText(text, WHITE, 26, x, y, True)
-		writeText("Press any key. . .", WHITE, 24, WINW-250, WINH-50, False)
+		text1 = Text(text, WHITE, 26, x, y)
+		if text == "":
+			Text("Press any key. . .", WHITE, 24, WINW-250, WINH-50).write()
 		if (x, y) == (-1, -1):              # if (x, y) == (-1, -1), put the text at the center of the screen
-			textRect.centerx = windowSurface.get_rect().centerx
-			textRect.centery = windowSurface.get_rect().centery
+			text1.rect.center = windowSurface.get_rect().center
 		if drawRect:                       # if drawRect == True
-			pygame.draw.rect(windowSurface, BGCOLOR, (textRect.left-2, textRect.top-5, textRect.width+4, textRect.height+10))       # Make a rectangle below the text
-		windowSurface.blit(textObj, textRect)               # make the text on the screen
+			pygame.draw.rect(windowSurface, BGCOLOR, (text1.rect.left-2, text1.rect.top-5, text1.rect.width+4, text1.rect.height+10))       # Make a rectangle below the text
+		text1.write()               # make the text on the screen
 		event = pygame.event.wait()
 		if event.type == QUIT:
 			terminate()
@@ -840,12 +836,12 @@ def main():
 		for t in range(len(startingTexts)):             # write the texts inside the startingTexts turn by turn
 			windowSurface.blit(wallpaper, pygame.Rect(0, 0, WINW, WINH))
 			if t == 0:
-				tempText, textRect = writeText(startingTexts[t], WHITE, 50, 0, 0, True)
+				tempText = Text(startingTexts[t], WHITE, 50, 0, 0)
 			else:
-				tempText, textRect = writeText(startingTexts[t], TEAL, 24, 0, 0, True)
-			textRect.centerx = windowSurface.get_rect().centerx
-			textRect.centery = windowSurface.get_rect().centery-50
-			windowSurface.blit(tempText, textRect)
+				tempText= Text(startingTexts[t], TEAL, 24, 0, 0)
+			tempText.rect.centerx = windowSurface.get_rect().centerx
+			tempText.rect.centery = windowSurface.get_rect().centery-50
+			tempText.write()
 			pygame.display.update()
 			if t == len(startingTexts)-1:               # For last text, draw the text on the center of the string
 				pause("Press any key to start the game.", False, -1, -1)
@@ -989,18 +985,17 @@ def main():
 		# Stop all currently playing sounds
 		stopAllSounds()
 		pygame.mixer.music.stop()
-		writeText("Game Over!", WHITE, 30, (WINW/2)-85, (WINH/2)-30, False)
+		Text("Game Over!", WHITE, 30, (WINW/2)-85, (WINH/2)-30).write()
 		pygame.display.update()
 		pygame.time.wait(900)
 		if score == topScore:
-			text, rect = writeText("New Top Score: %s" % str(score), YELLOW, 30, 0, 0, True)
+			text = Text("New Top Score: %s" % str(score), YELLOW, 30, 0, 0)
 			topScoreFile("save")
 		else:
-			text, rect = writeText("Your Score: %s" % str(score), WHITE, 30, 0, 0, True)
-		rect.centerx = windowSurface.get_rect().centerx
-		rect.centery = windowSurface.get_rect().centery
-		pygame.draw.rect(windowSurface, BGCOLOR, rect)
-		windowSurface.blit(text, rect)
+			text = Text("Your Score: %s" % str(score), WHITE, 30, 0, 0)
+		text.rect.center = windowSurface.get_rect().center
+		pygame.draw.rect(windowSurface, BGCOLOR, text.rect)
+		text.write()
 		pygame.display.update()
 		pygame.time.wait(1800)
 		pause("Press any key to play again.", True, -1, -1)
