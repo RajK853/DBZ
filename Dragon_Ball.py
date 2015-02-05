@@ -29,12 +29,12 @@ GREEN = (10, 150, 10)
 MAXBARVALUE = 100
 ENERGYBARW = MAXBARVALUE+4
 ENERGYBARH = 10
-DEFAULTATTACKPERIOD = 8         # this determines the interval between the release of energies
+DEFAULTATTACKPERIOD = 8         # this determines the interval (in terms of frames) between the release of energies
 energyUsage = {"kamehameha" : 50, "explosive wave" : 50, "energy ball" : 90}
 
 # game characters
-buu = dict(health = [MAXBARVALUE]*2, hpRegen = "0.0001*self.health[1]", energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], specialAttacks = [], abilities = ["Shoot", "None"], type = "buu", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD-3])
-goku = dict(health = [MAXBARVALUE]*2, hpRegen = "0.0003*hero.health[1]", energy = [MAXBARVALUE]*2, superSayan = False, charging = [False, False, "n"], abilities = [], type = "hero", chargeTime = [1, 2*FPS, 2*FPS], attackRate = [0, DEFAULTATTACKPERIOD])
+buu = dict(health = [MAXBARVALUE]*2, hpRegen = "0.0001*self.health[1]", specialAttacks = [], abilities = ["Shoot", "None"], type = "buu", attackRate = [0, DEFAULTATTACKPERIOD-3])
+goku = dict(health = [MAXBARVALUE]*2, hpRegen = "0.0003*hero.health[1]", abilities = [], type = "hero", attackRate = [0, DEFAULTATTACKPERIOD])
 
 class Background:       # holds background components
 	STARMINSIZE = 2
@@ -275,7 +275,7 @@ class Energy:           # manages all sort of energy moves in the game
 			if char.type == "hero":
 				for o in Object.objects[:]:
 					windowSurface.blit(o["image"], o["rect"])
-					o["life"][0] -= x*(self.EXPLOSIVEWAVEDMG*(char.chargeTime[0]/2.5+0.1))
+					o["life"][0] -= x*(self.EXPLOSIVEWAVEDMG*(char.chargeTime[0]/1.5+0.1+level))
 					if o["life"][0] < 0:
 						score += o["life"][1]                                   # increase score
 						if char.eDamage <= self.ENERGYDMG+level*7:
@@ -293,7 +293,7 @@ class Energy:           # manages all sort of energy moves in the game
 						drawEnergyBar(boss)
 						if boss.energies: boss.energies.clear()       # if there is any boss' energy, remove all the energies to show that they were destroyed by the explosive wave
 						# reduce boss' health
-						boss.health[0] -= x*(self.EXPLOSIVEWAVEDMG*(char.chargeTime[0]/1.5+0.1))
+						boss.health[0] -= x*(self.EXPLOSIVEWAVEDMG*(char.chargeTime[0]/1.5+0.1+level))
 						if boss.health[0] < 0: boss.health[0] = 0
 			else:           # if the char is boss,
 				for o in Object.objects[:]:
@@ -389,7 +389,7 @@ class Energy:           # manages all sort of energy moves in the game
 		windowSurface.blit(pygame.transform.scale(char.sMove["img"], char.sMove["rect"].size), char.sMove["rect"])
 
 class Character:
-	size = (35, 80)
+	size = (35, 80)         # size for character
 	BLINKDISTANCE = size[1]*2
 
 	def __init__(self, char):
@@ -399,16 +399,16 @@ class Character:
 			self.eDamage = Energy.ENERGYDMG                     # energy damage for hero
 		else:
 			self.health = [(level)*5*h for h in char["health"]]     # hp for boss
-			self.eDamage = Energy.ENERGYDMG + level             # energy daage for boss
+			self.eDamage = Energy.ENERGYDMG + level             # energy damage for boss
 			if self.eDamage > Energy.MAXENERGYDMG: self.eDamage = Energy.MAXENERGYDMG       # set limit to boss' energy damage
 			self.specialAttacks = char["specialAttacks"]        # every boss has a list where they have their special abilities stored later
 		self.hpRegen = char["hpRegen"]          # hp regeneration value
-		self.energy = copy.deepcopy(char["energy"])         # energy to use special moves
+		self.energy = [MAXBARVALUE]*2         # energy to use special moves
 		self.energies = []          # stores the rectangle information and the image data of each energy as a dictionary in this list
-		self.superSayan = char["superSayan"]            # super sayan mode
-		self.charging = copy.deepcopy(char["charging"])  # tells if charging some special moves
+		self.superSayan = False            # super sayan mode
+		self.charging = [False, False, "n"]  # tells if charging some special moves
 		self.abilities = copy.deepcopy(char["abilities"])      # available abilities for character
-		self.chargeTime = char["chargeTime"]            # chargeTime[0] holds the time for which energy was charged. chargeTime[1] and chargeTime[2] are used to deduce the chargeTime[0]
+		self.chargeTime = [1, 2*FPS, 2*FPS]            # chargeTime[0] holds the time for which energy was charged. chargeTime[1] and chargeTime[2] are used to deduce the chargeTime[0]
 		self.attackRate = char["attackRate"]                # rate at which ordinary energies release
 		# Images showing energy around the character
 		self.energyImgs = [pygame.image.load("Data/Image/{}/SS_Energy_1.png".format(self.type)), pygame.image.load("Data/Image/{}/SS_Energy_2.png".format(self.type))]
