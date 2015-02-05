@@ -19,3 +19,6 @@ DBZ (exe version).zip again. Just download the "Dragon_Ball.py" and "Data" folde
 (may not be necessary but recommended) and copy them to the folder with the "DBZ.exe" file.
 Enjoy the game and feel free to leave any feedbacks and suggestions or report any bug at 
 either rgk.rana@yahoo.com or "Raj K Rana" fb account :)
+
+**Updates:**
+* 5th Feb 2015: - Updates field added - Function to write texts now done with Class Text
