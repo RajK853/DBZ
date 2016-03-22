@@ -1,0 +1,13 @@
+# Kaioken
+name = 'kaioken'
+eUsage = 5
+image = None
+sound = {"goku" : [pygame.mixer.Sound("Data/Sound/Charging.ogg"), pygame.mixer.Sound("Data/Sound/Goku/Releasing.ogg")]}
+level = 0
+damage = [3, 4, 5, 6]
+chargable = False
+description = 'Double your damage!!'
+cooldown = [10, 9, 8, 7]
+type = ('Active', 'transform')
+hp = [500, 600, 700, 800]
+activated = False

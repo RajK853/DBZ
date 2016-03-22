@@ -1,0 +1,13 @@
+# Explosive Wave
+name = 'explosive wave'
+eUsage = 50
+image = None
+sound = {"goku" : [pygame.mixer.Sound("Data/Sound/Charging.ogg"), pygame.mixer.Sound("Data/Sound/Goku/Releasing.ogg")], "kid buu" : [pygame.mixer.Sound("Data/Sound/Charging.ogg"), pygame.mixer.Sound("Data/Sound/Kid Buu/Releasing.ogg")]}
+level = 0
+damage = [1.5, 2.5, 3.5, 4.5]
+chargable = True
+description = 'Boom! Baa-m!'
+cooldown = [10, 9, 8, 7]
+type = ('Active', 'wave')
+hp = [500, 600, 700, 800]
+activated = False

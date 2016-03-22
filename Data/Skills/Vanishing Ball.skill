@@ -1,0 +1,13 @@
+# Vanishing Ball
+name = 'vanishing ball'
+eUsage = 70
+image = pygame.image.load("Data/Image/Kid Buu/Vanishing_ball.png")
+sound = {"kid buu" : [pygame.mixer.Sound("Data/Sound/Charging.ogg"), pygame.mixer.Sound("Data/Sound/Kid Buu/Releasing.ogg")]}
+level = 0
+damage = [4, 5, 6, 7]
+chargable = True
+description = 'Entire planet shall vanish!. . . .'
+cooldown = [18, 16, 14, 12]
+type = ('Active', 'ball')
+hp = [20*FPS*(i+1) for i in range(4)]
+activated = False

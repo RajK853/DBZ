@@ -1,0 +1,16 @@
+# Kid Buu
+name = 'kid buu'
+type = 'kid buu'
+size = (55, 88)
+armor = 10
+health = [800, 800]
+hpRegen = 2
+energy = [400, 400]
+eRegen = 4
+eDamage = 40
+eImgs = (pygame.image.load("Data/Image/Kid Buu/Energy1.png"), pygame.image.load("Data/Image/Kid Buu/Energy1.png"))
+eSize = (42, 25)
+ePos = (0.40, (0.31, 0))
+skills = ['Kamehameha', 'Explosive Wave', 'Vanishing Ball']
+abilities = ["Shoot", "None", "Charge", "Block"]
+blocking = [False, 0.25]

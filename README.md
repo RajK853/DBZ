@@ -22,3 +22,4 @@ either rgk.rana@yahoo.com or "Raj K Rana" fb account :)
 
 **Updates:**
 * 5th Feb 2015: - Updates field added - Function to write texts now done with Class Text
+* 22nd March 2016: - Huge changes made - user-custom keys, new moves, new graphics, etc. However, still not completed. . .

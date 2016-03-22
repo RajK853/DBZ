@@ -1,0 +1,16 @@
+# Goku
+name = 'goku'
+type = 'goku'
+size = (77, 100)
+armor = 10
+health = [1000, 1000]
+hpRegen = 3
+energy = [300, 300]
+eRegen = 3
+eDamage = 30
+eImgs = (pygame.image.load("Data/Image/Goku/Energy1.png"), pygame.image.load("Data/Image/Goku/SS_Energy.png"))
+eSize = (45, 28)
+ePos = (0.37, (0.18, 0.54))
+skills = ['Kamehameha', 'Explosive Wave', 'Spirit Bomb']
+abilities = ["Shoot", "None", "Charge", "Block"]
+blocking = [False, 0.20]

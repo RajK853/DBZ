@@ -1,0 +1,14 @@
+# Spirit Bomb
+name = 'spirit bomb'
+eUsage = 70
+image = pygame.image.load("Data/Image/Goku/Spirit_bomb.png")
+sound = {"goku" : [pygame.mixer.Sound("Data/Sound/Charging.ogg"), pygame.mixer.Sound("Data/Sound/Goku/Releasing.ogg")]}
+level = 0
+level = 0
+damage = [4, 5, 6, 7]
+chargable = True
+description = 'Give me your energy!!'
+cooldown = [18, 16, 14, 12]
+type = ('Active', 'ball')
+hp = [20*FPS*(i+1) for i in range(4)]
+activated = False

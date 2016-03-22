@@ -1,0 +1,13 @@
+# Kamehameha
+name = 'kamehameha'
+eUsage = 50
+image = pygame.image.load("Data/Image/Goku/kamehameha.png")
+level = 0
+damage = [3, 4, 5, 6]
+sound = {"goku" : [pygame.mixer.Sound("Data/Sound/Goku/Kamehameha.ogg"), pygame.mixer.Sound("Data/Sound/Goku/Releasing.ogg")], "kid buu" : [pygame.mixer.Sound("Data/Sound/Kid Buu/Kamehameha.ogg"), pygame.mixer.Sound("Data/Sound/Kid Buu/Releasing.ogg")]}
+chargable = True
+description = 'This is Ka-me-ha-me-haaa!'
+cooldown = [10, 9, 8, 7]
+type = ('Active', 'beam')
+hp = [20*FPS*(i+1) for i in range(4)]
+activated = False
