@@ -1,4 +1,4 @@
-# DBZ_Stickman_Edition
+# DBZ
 
 **Description:** This is a shooting game based on DBZ. As you destroy obstacles and score more,
 you can unlock new abilites such as Kamehameha, Explosive Wave and Super Sayan mode. 
